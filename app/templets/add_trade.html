@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Trade – Trading Journal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            background: rgba(255,255,255,0.03);
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+        .nav-brand {
+            font-size: 1.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7f7, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        nav a {
+            text-decoration: none;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            padding: 0.4rem 0.9rem;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        nav a:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1.5rem;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 480px;
+        }
+        .card h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .card p.sub { color: #64748b; font-size: 0.88rem; margin-bottom: 2rem; }
+
+        .form-group { margin-bottom: 1.2rem; }
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.4rem;
+        }
+        input, select {
+            width: 100%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e2e8f0;
+            padding: 0.7rem 1rem;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus, select:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+        }
+        .flash-list { list-style: none; margin-bottom: 1.2rem; }
+        .flash-msg {
+            padding: 0.65rem 1rem;
+            border-radius: 7px;
+            font-size: 0.88rem;
+            margin-bottom: 0.4rem;
+        }
+        .flash-success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+        .flash-danger  { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);  color: #f87171; }
+
+        .field-errors { color: #f87171; font-size: 0.82rem; margin-top: 0.3rem; }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.6rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+        }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-submit:active { transform: translateY(0); }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.2rem;
+            color: #64748b;
+            font-size: 0.88rem;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .back-link:hover { color: #94a3b8; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-brand">📈 Trading Journal</span>
+    <a href="{{ url_for('home') }}">← Back to Dashboard</a>
+</nav>
+
+<main>
+    <div class="card">
+        <h1>Add a Trade</h1>
+        <p class="sub">Record your trade details below.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flash-list">
+                    {% for category, message in messages %}
+                        <li class="flash-msg flash-{{ category }}">{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" novalidate>
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.trade_instruments.label }}
+                {{ form.trade_instruments(placeholder="e.g. NIFTY, BANKNIFTY") }}
+                {% if form.trade_instruments.errors %}
+                    <div class="field-errors">{{ form.trade_instruments.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.trade_lots.label }}
+                {{ form.trade_lots(placeholder="e.g. 1") }}
+                {% if form.trade_lots.errors %}
+                    <div class="field-errors">{{ form.trade_lots.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.trade_date.label }}
+                {{ form.trade_date() }}
+                {% if form.trade_date.errors %}
+                    <div class="field-errors">{{ form.trade_date.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.trade_pnl.label }}
+                {{ form.trade_pnl(placeholder="e.g. 500 or -200") }}
+                {% if form.trade_pnl.errors %}
+                    <div class="field-errors">{{ form.trade_pnl.errors[0] }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-submit" id="submitTradeBtn">Submit Trade</button>
+        </form>
+
+        <a href="{{ url_for('home') }}" class="back-link">Cancel</a>
+    </div>
+</main>
+
+</body>
+</html>

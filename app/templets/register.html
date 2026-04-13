@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register – Trading Journal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0f1117;
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem 1rem;
+        }
+        .brand {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7f7, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2rem;
+        }
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 440px;
+        }
+        .card h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.3rem; }
+        .card .sub { color: #64748b; font-size: 0.88rem; margin-bottom: 2rem; }
+
+        .form-group { margin-bottom: 1.1rem; }
+        label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.35rem;
+        }
+        input {
+            width: 100%;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            color: #e2e8f0;
+            padding: 0.7rem 1rem;
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+        }
+        .field-errors { color: #f87171; font-size: 0.82rem; margin-top: 0.3rem; }
+
+        .flash-list { list-style: none; margin-bottom: 1.2rem; }
+        .flash-msg { padding: 0.65rem 1rem; border-radius: 7px; font-size: 0.88rem; margin-bottom: 0.4rem; }
+        .flash-success { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.3); color: #4ade80; }
+        .flash-danger  { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);  color: #f87171; }
+
+        .btn-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 9px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.6rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(99,102,241,0.35);
+            font-family: 'Inter', sans-serif;
+        }
+        .btn-submit:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        .footer-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.88rem;
+            color: #64748b;
+        }
+        .footer-link a { color: #818cf8; text-decoration: none; }
+        .footer-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+<div class="brand">📈 Trading Journal</div>
+
+<div class="card">
+    <h1>Create Account</h1>
+    <p class="sub">Start tracking your trades today.</p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flash-list">
+                {% for category, message in messages %}
+                    <li class="flash-msg flash-{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.Name.label }}
+            {{ form.Name(class="") }}
+            {% if form.Name.errors %}<div class="field-errors">{{ form.Name.errors[0] }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.Email.label }}
+            {{ form.Email(class="") }}
+            {% if form.Email.errors %}<div class="field-errors">{{ form.Email.errors[0] }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.Password.label }}
+            {{ form.Password(class="") }}
+            {% if form.Password.errors %}<div class="field-errors">{{ form.Password.errors[0] }}</div>{% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ form.Daily_max_trade.label }}
+            {{ form.Daily_max_trade(class="") }}
+            {% if form.Daily_max_trade.errors %}<div class="field-errors">{{ form.Daily_max_trade.errors[0] }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="btn-submit" id="registerBtn">Register</button>
+    </form>
+</div>
+
+<div class="footer-link">
+    Already have an account? <a href="{{ url_for('login') }}">Login</a>
+</div>
+
+</body>
+</html>

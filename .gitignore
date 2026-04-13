@@ -1,0 +1,7 @@
+.venv/
+venv/
+.agent/
+__pycache__/
+*.db
+instance/
+app/instance/

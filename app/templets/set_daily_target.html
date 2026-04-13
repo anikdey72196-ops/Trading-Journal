@@ -1,0 +1,45 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="target-container" style="max-width: 600px; margin: 4rem auto; background: rgba(20, 20, 30, 0.7); backdrop-filter: blur(15px); padding: 2rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.05); box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center;">
+    
+    <div style="margin-bottom: 2rem;">
+        <h2 style="font-size: 2rem; color: var(--text-light); margin-bottom: 0.5rem;">New Day, New Rules</h2>
+        <p style="color: var(--text-muted); font-size: 1.1rem;">Before you enter the market, define your engagement parameters.</p>
+    </div>
+
+    <!-- Yesterday's Recap -->
+    <div style="background: rgba(0,0,0,0.3); border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.02);">
+        <div>
+            <div style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Yesterday's P&L</div>
+            <div style="font-size: 1.5rem; font-weight: bold; color: {{ 'var(--trend-up)' if yesterday_pnl >= 0 else 'var(--trend-down)' }};">
+                {{ '+' if yesterday_pnl >= 0 else '' }}{{ "%.2f"|format(yesterday_pnl) }}
+            </div>
+        </div>
+        <div>
+            <div style="font-size: 0.9rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Volume</div>
+            <div style="font-size: 1.5rem; font-weight: bold; color: var(--text-light);">{{ yesterday_volume }} Executions</div>
+        </div>
+    </div>
+
+    <!-- Target Form -->
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        <div class="form-group" style="text-align: left; margin-bottom: 2rem;">
+            {{ form.max_trades.label(style="display:block; margin-bottom:0.5rem; color: var(--text-light);") }}
+            {{ form.max_trades(class="form-control", style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); color: white; font-size: 1.2rem; text-align: center;") }}
+            {% if form.max_trades.errors %}
+                <ul class="errors" style="color: var(--trend-down); list-style: none; padding: 0; margin-top: 0.5rem;">
+                {% for error in form.max_trades.errors %}
+                    <li>{{ error }}</li>
+                {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+        
+        <div style="margin-top: 1.5rem;">
+            {{ form.submit(class="btn-primary", style="width: 100%; padding: 1rem; font-size: 1.1rem; border-radius: 8px; cursor: pointer; border: none;") }}
+        </div>
+    </form>
+</div>
+{% endblock %}

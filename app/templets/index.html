@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Journal – Track Your Trades</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Inter', sans-serif;
+            /* Added a beautiful trading chart background with a dark overlay so text remains readable */
+            background: linear-gradient(to bottom, rgba(15, 17, 23, 0.8), rgba(15, 17, 23, 0.95)), 
+                        url("https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2070&auto=format&fit=crop") no-repeat center center fixed;
+            background-size: cover;
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── NAV ── */
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.2rem 2.5rem;
+            background: rgba(255,255,255,0.02);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .nav-brand {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #6ee7f7, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .nav-links { display: flex; gap: 0.8rem; }
+        .nav-links a {
+            text-decoration: none;
+            padding: 0.5rem 1.1rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .nav-links .btn-login  { color: #94a3b8; }
+        .nav-links .btn-login:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
+        .nav-links .btn-register {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+        }
+        .nav-links .btn-register:hover { opacity: 0.85; }
+
+        /* ── HERO ── */
+        .hero {
+            text-align: center;
+            padding: 7rem 1.5rem 5rem;
+            position: relative;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -100px; left: 50%; transform: translateX(-50%);
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: rgba(99,102,241,0.12);
+            border: 1px solid rgba(99,102,241,0.3);
+            color: #818cf8;
+            padding: 0.35rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            margin-bottom: 1.5rem;
+        }
+        .hero h1 {
+            font-size: clamp(2.5rem, 6vw, 4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.2rem;
+            background: linear-gradient(135deg, #f1f5f9 0%, #818cf8 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p {
+            font-size: 1.1rem;
+            color: #64748b;
+            max-width: 520px;
+            margin: 0 auto 2.5rem;
+            line-height: 1.7;
+        }
+        .hero-cta { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+        .cta-primary {
+            text-decoration: none;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #fff;
+            padding: 0.85rem 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(99,102,241,0.4);
+        }
+        .cta-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(99,102,241,0.55); }
+        .cta-secondary {
+            text-decoration: none;
+            color: #94a3b8;
+            padding: 0.85rem 2rem;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 1rem;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.2s;
+        }
+        .cta-secondary:hover { border-color: rgba(255,255,255,0.2); color: #e2e8f0; }
+
+        /* ── FEATURE CARDS ── */
+        .features {
+            max-width: 1000px;
+            margin: 2rem auto 5rem;
+            padding: 0 1.5rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 1.2rem;
+        }
+        .feature-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            padding: 1.8rem;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+        .feature-icon { font-size: 2rem; margin-bottom: 1rem; }
+        .feature-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; color: #f1f5f9; }
+        .feature-card p { font-size: 0.88rem; color: #64748b; line-height: 1.6; }
+    </style>
+</head>
+<body>
+
+<nav>
+    <span class="nav-brand">📈 Trading Journal</span>
+    <div class="nav-links">
+        <a href="/login" class="btn-login">Login</a>
+        <a href="/register" class="btn-register">Get Started</a>
+    </div>
+</nav>
+
+<section class="hero">
+    <div class="hero-badge">📊 Your Personal Trade Tracker</div>
+    <h1>Master Your Trades,<br>Control Your Day</h1>
+    <p>Log every trade, enforce your daily limit, and review your performance — all in one clean dashboard.</p>
+    <div class="hero-cta">
+        <a href="/register" class="cta-primary">Start Tracking Free</a>
+        <a href="/login" class="cta-secondary">I have an account →</a>
+    </div>
+</section>
+
+<div class="features">
+    <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Daily Trade Limit</h3>
+        <p>Set your maximum trades per day and watch the counter tick down in real time. Stop overtrading for good.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Trade Journal</h3>
+        <p>Record instrument, lots, date, and PnL for every trade. Build a complete history of your trading activity.</p>
+    </div>
+    <div class="feature-card">
+        <div class="feature-icon">📉</div>
+        <h3>PnL Tracking</h3>
+        <p>See profits highlighted in green and losses in red at a glance. Understand your performance instantly.</p>
+    </div>
+</div>
+
+</body>
+</html>

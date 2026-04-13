@@ -1,0 +1,157 @@
+{% extends "layout.html" %}
+
+{% block content %}
+
+<!-- Calculate Win Rate and PnL metrics purely in Jinja for the visual array -->
+{% set ns = namespace(total_pnl=0, wins=0, losses=0) %}
+{% for trade in trades %}
+    {% set ns.total_pnl = ns.total_pnl + trade.trade_pnl %}
+    {% if trade.trade_pnl > 0 %}
+        {% set ns.wins = ns.wins + 1 %}
+    {% elif trade.trade_pnl < 0 %}
+        {% set ns.losses = ns.losses + 1 %}
+    {% endif %}
+{% endfor %}
+
+{% set total_wl = ns.wins + ns.losses %}
+{% set win_rate = (ns.wins / total_wl * 100) | round(1) if total_wl > 0 else 0 %}
+
+
+<!-- Stunning Top Metric Array -->
+<section class="stats-row">
+    
+    <!-- Stat Object 1: Daily Volume -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Daily Volume</span>
+            <span class="stat-icon"><i class="fa-solid fa-chart-line"></i></span>
+        </div>
+        <div class="stat-value">{{ trades_today | default(0) }}</div>
+        <div class="stat-sub">
+            <span class="trend-up"><i class="fa-solid fa-arrow-trend-up"></i></span>
+            {{ trades | length }} Lifetime Executions
+        </div>
+    </div>
+
+    <!-- Stat Object 2: Net P&L -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Net Liquidity (P&L)</span>
+            <span class="stat-icon"><i class="fa-solid fa-dollar-sign"></i></span>
+        </div>
+        <div class="stat-value">${{ "%.2f"|format(ns.total_pnl) }}</div>
+        <div class="stat-sub">
+            {% if ns.total_pnl >= 0 %}
+                <span class="trend-up"><i class="fa-solid fa-arrow-up"></i> In Profit</span>
+            {% else %}
+                <span class="trend-down"><i class="fa-solid fa-arrow-down"></i> In Drawdown</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stat Object 3: Remaining Margin (Trades) -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">Trades Left</span>
+            <span class="stat-icon"><i class="fa-solid fa-bolt"></i></span>
+        </div>
+        <div class="stat-value">{{ remaining_trades | default(10) }}</div>
+        <div class="stat-sub">
+            <i class="fa-regular fa-clock"></i> Daily Limit: {{ today_target.max_trades if today_target else user.Daily_max_trade }}
+        </div>
+    </div>
+
+    <!-- Stat Object 4: Win Rate -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-title">System Win Rate</span>
+            <span class="stat-icon"><i class="fa-solid fa-crosshairs"></i></span>
+        </div>
+        <div class="stat-value">{{ win_rate }}%</div>
+        <div class="stat-sub">
+            <span class="trend-up">{{ ns.wins }}W</span> <span style="margin: 0 4px;">/</span> <span class="trend-down">{{ ns.losses }}L</span>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- 7-Day Performance History -->
+<div class="performance-panel" style="margin-top: 2rem;">
+    <div class="history-header" style="margin-bottom: 1.5rem; padding-bottom: 0.8rem;">
+        <h2><i class="fa-solid fa-calendar-week" style="color:var(--brand-primary); font-size:1.1rem;"></i> 7-Day Performance</h2>
+    </div>
+    
+    <div class="daily-cards-container">
+        {% for day in daily_history %}
+        <div class="daily-card {{ 'positive' if day.pnl > 0 else 'negative' if day.pnl < 0 else 'neutral' }}">
+            <div class="daily-date">{{ day.date.strftime('%a, %b %d') }}</div>
+            <div class="daily-pnl">
+                {{ '+' if day.pnl > 0 else '' }}{{ "%.2f"|format(day.pnl) }}
+            </div>
+            <div class="daily-volume">
+                <i class="fa-solid fa-chart-simple"></i> {{ day.volume }} Trades
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Trade Execution History Terminal -->
+<div class="history-panel" style="margin-top: 2rem;">
+    <div class="history-header">
+        <h2><i class="fa-solid fa-clock-rotate-left" style="color:var(--brand-primary); font-size:1.1rem;"></i> Execution Log</h2>
+        <span class="trade-count">{{ trades | length }} Registered Trades</span>
+    </div>
+    
+    <div class="table-wrap">
+        {% if trades %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date / Time</th>
+                    <th>Instrument</th>
+                    <th>Volume/Lot Size</th>
+                    <th>Net P&L</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for trade in trades %}
+                <tr>
+                    <td class="col-date">{{ trade.trade_date.strftime('%B %d, %Y') }}</td>
+                    
+                    <td class="col-instrument">{{ trade.trade_instruments }}</td>
+                    
+                    <td class="col-lots">{{ "%.2f"|format(trade.trade_lots) }}</td>
+                    
+                    <td class="pnl-cell {{ 'pnl-positive' if trade.trade_pnl >= 0 else 'pnl-negative' }}">
+                        <div class="pnl-pill">
+                            {{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.2f"|format(trade.trade_pnl) }}
+                        </div>
+                    </td>
+                    
+                    <td class="col-action">
+                        <!-- Custom futuristic hover button to theoretically edit/delete -->
+                        <button class="action-btn" title="Archive / Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        
+        <!-- Premium Empty State Visualization -->
+        <div class="empty-state">
+            <div class="empty-icon">🪐</div>
+            <h3 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem;">No Trading Data Present</h3>
+            <p>Your ledger is completely empty. Execute your first order via the <strong>New Order</strong> button above to populate your analytics array.</p>
+        </div>
+
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
