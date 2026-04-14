@@ -113,6 +113,7 @@
                     <th>Instrument</th>
                     <th>Volume/Lot Size</th>
                     <th>Net P&L</th>
+                    <th>Reason</th>
                     <th>Action</th>
                 </tr>
             </thead>
@@ -129,6 +130,10 @@
                         <div class="pnl-pill">
                             {{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.2f"|format(trade.trade_pnl) }}
                         </div>
+                    </td>
+                    
+                    <td class="col-reason" style="color: #94a3b8; font-size: 0.9rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ trade.trade_reason }}">
+                        {{ trade.trade_reason if trade.trade_reason else '-' }}
                     </td>
                     
                     <td class="col-action">

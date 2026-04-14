@@ -206,7 +206,8 @@ def add_trade():
             trade_instruments=form.trade_instruments.data,
             trade_lots=form.trade_lots.data,
             trade_date=form.trade_date.data,
-            trade_pnl=form.trade_pnl.data
+            trade_pnl=form.trade_pnl.data,
+            trade_reason=form.trade_reason.data
         )
         try:
             db.session.add(trade)

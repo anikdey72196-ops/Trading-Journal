@@ -15,6 +15,7 @@ class Trades(db.Model):
     trade_lots = db.Column(db.Integer, nullable=False)
     trade_date = db.Column(db.DateTime, nullable=False)
     trade_pnl = db.Column(db.Integer, nullable=False)
+    trade_reason = db.Column(db.String(255), nullable=True)
 
 class Remaining_trade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -26,3 +27,8 @@ class DailyTarget(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     date = db.Column(db.Date, nullable=False)
     max_trades = db.Column(db.Integer, nullable=False)
+
+class Description(db.Model):
+    id=db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    description = db.Column(db.String(80), nullable=False)

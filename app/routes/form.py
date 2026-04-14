@@ -19,6 +19,7 @@ class AddTradeForm(FlaskForm):
     trade_lots = IntegerField('Trade Lots', validators=[DataRequired()], render_kw={"placeholder": "e.g. 1"})
     trade_date = DateField('Trade Date', validators=[DataRequired()])
     trade_pnl = IntegerField('Trade PnL', validators=[DataRequired()], render_kw={"placeholder": "e.g. 500 or -200"})
+    trade_reason = StringField('Trade Reason / Notes', render_kw={"placeholder": "e.g. Support bounce, News... (Optional)"})
     submit = SubmitField('Submit Trade')
 
 class DailyTargetForm(FlaskForm):
