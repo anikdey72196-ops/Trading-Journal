@@ -6,8 +6,14 @@ from form import Register, Login, AddTradeForm, DailyTargetForm
 from database import db, User, Trades, DailyTarget
 from datetime import date, timedelta
 
+import os
 
-app = Flask(__name__, template_folder='templets')
+base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+root_dir = os.path.abspath(os.path.join(base_dir, '..'))
+app = Flask(__name__, 
+            template_folder=os.path.join(base_dir, 'templets'),
+            static_folder=os.path.join(base_dir, 'static'),
+            instance_path=os.path.join(root_dir, 'instance'))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trading_journal.db'
 app.config['SECRET_KEY'] = 'a_very_secret_and_complex_key'
 

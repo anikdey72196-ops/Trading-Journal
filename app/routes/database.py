@@ -32,3 +32,8 @@ class Description(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     description = db.Column(db.String(80), nullable=False)
+
+class Obey_rules(db.Model):
+    id=db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    obey_rules = db.Column(db.String(80), nullable=False)
