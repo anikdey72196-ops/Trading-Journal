@@ -5,7 +5,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     Name = db.Column(db.String(80), unique=True, nullable=False)
     Email = db.Column(db.String(120), unique=True, nullable=False)
-    Password = db.Column(db.String(80), nullable=False)
+    Password = db.Column(db.String(255), nullable=False)
     Daily_max_trade = db.Column(db.Integer, nullable=False)
 
 class Trades(db.Model):

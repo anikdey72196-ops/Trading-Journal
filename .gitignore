@@ -5,3 +5,4 @@ __pycache__/
 *.db
 instance/
 app/instance/
+.env

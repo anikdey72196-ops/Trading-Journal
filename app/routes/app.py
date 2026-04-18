@@ -5,8 +5,10 @@ from flask_wtf.csrf import CSRFProtect
 from form import Register, Login, AddTradeForm, DailyTargetForm
 from database import db, User, Trades, DailyTarget
 from datetime import date, timedelta
+from werkzeug.security import generate_password_hash, check_password_hash
 
 import os
+from dotenv import load_dotenv
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 root_dir = os.path.abspath(os.path.join(base_dir, '..'))
@@ -14,13 +16,17 @@ app = Flask(__name__,
             template_folder=os.path.join(base_dir, 'templets'),
             static_folder=os.path.join(base_dir, 'static'),
             instance_path=os.path.join(root_dir, 'instance'))
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///trading_journal.db'
-app.config['SECRET_KEY'] = 'a_very_secret_and_complex_key'
+
+# Load environment variables from app/.env
+env_path = os.path.join(base_dir, '.env')
+load_dotenv(env_path)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///trading_journal.db')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret')
 
 csrf = CSRFProtect(app)
 
 db.init_app(app)
-
 
 @app.route('/')
 @app.route('/index')
@@ -32,6 +38,58 @@ def index():
     return render_template('index.html')
 
 
+@app.route('/delete_trade/<int:trade_id>', methods=['POST'])
+def delete_trade(trade_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+        
+    trade_to_delete = Trades.query.get_or_404(trade_id)
+    
+    if trade_to_delete.user_id != session['user_id']:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('home'))
+
+    try:
+        db.session.delete(trade_to_delete)
+        db.session.commit()
+        flash("Trade deleted successfully!", "success")
+    except:
+        flash("There was a problem deleting that trade.", "error")
+        
+    return redirect(url_for('home'))
+
+@app.route('/edit_trade/<int:trade_id>', methods=['GET', 'POST'])
+def edit_trade(trade_id):
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('login'))
+
+    trade_to_edit = Trades.query.get_or_404(trade_id)
+
+    if trade_to_edit.user_id != session['user_id']:
+        flash("Unauthorized", "danger")
+        return redirect(url_for('home'))
+
+    form = AddTradeForm(obj=trade_to_edit)
+    
+    if form.validate_on_submit():
+        trade_to_edit.trade_instruments = form.trade_instruments.data
+        trade_to_edit.trade_lots = form.trade_lots.data
+        trade_to_edit.trade_date = form.trade_date.data
+        trade_to_edit.trade_pnl = form.trade_pnl.data
+        trade_to_edit.trade_reason = form.trade_reason.data
+        
+        try:
+            db.session.commit()
+            flash('Trade updated successfully!', 'success')
+            return redirect(url_for('home'))
+        except Exception as e:
+            db.session.rollback()
+            flash('Failed to update trade.', 'danger')
+            print(f"Database error during trade update: {e}")
+
+    return render_template('edit_trade.html', form=form, trade=trade_to_edit)
+
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     """User registration route."""
@@ -42,11 +100,12 @@ def register():
     form = Register()
     if form.validate_on_submit():
         
+        hashed_password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
         user = User(
             Name=form.Name.data,
             Email=form.Email.data,
-            Password=form.Password.data, 
-            Daily_max_trade=form.Daily_max_trade.data
+            Password=hashed_password, 
+            Daily_max_trade=form.Avg_Daily_max_trade.data
         )
         try:
             db.session.add(user)
@@ -72,12 +131,21 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(Email=form.Email.data).first()
         
-        
-        if user and user.Password == form.Password.data: 
-           
-            session['user_id'] = user.id
-            flash('Login successful!', 'success')
-            return redirect(url_for('home'))
+        if user:
+            # Check hashed password
+            if check_password_hash(user.Password, form.Password.data):
+                session['user_id'] = user.id
+                flash('Login successful!', 'success')
+                return redirect(url_for('home'))
+            # Fallback for plain text passwords in the current database (auto-upgrades them to hashes)
+            elif user.Password == form.Password.data:
+                user.Password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
+                db.session.commit()
+                session['user_id'] = user.id
+                flash('Login successful!', 'success')
+                return redirect(url_for('home'))
+            else:
+                flash('Invalid email or password.', 'danger')
         else:
             flash('Invalid email or password.', 'danger')
 
@@ -148,10 +216,15 @@ def home():
     trades_today = len([t for t in user_trades if t.trade_date.date() == today])
     remaining_trades = max(0, today_target.max_trades - trades_today)
 
+    # Pagination for the execution log table
+    page = request.args.get('page', 1, type=int)
+    log_trades = Trades.query.filter_by(user_id=user.id).order_by(Trades.trade_date.desc(), Trades.id.desc()).paginate(page=page, per_page=10, error_out=False)
+
     return render_template(
         'home.html',
         user=user,
         trades=user_trades,
+        log_trades=log_trades,
         remaining_trades=remaining_trades,
         trades_today=trades_today,
         daily_history=daily_history,

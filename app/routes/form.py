@@ -10,7 +10,7 @@ class Register(FlaskForm):
     Name = StringField('Name', validators=[DataRequired()], render_kw={"placeholder": "Enter your name"})
     Email = EmailField('Email', validators=[DataRequired()], render_kw={"placeholder": "Enter your email"})
     Password = PasswordField('Password', validators=[DataRequired()], render_kw={"placeholder": "Enter your password"})
-    Daily_max_trade = IntegerField('Daily Max Trades', validators=[DataRequired()], render_kw={"placeholder": "Enter your daily max trades"})
+    Avg_Daily_max_trade = IntegerField('Avg Daily Max Trades', validators=[DataRequired()], render_kw={"placeholder": "Enter your average daily max trades"})
     submit = SubmitField('Register')
 
 class Login(FlaskForm):
