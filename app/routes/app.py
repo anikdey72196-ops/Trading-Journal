@@ -1,17 +1,18 @@
-
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-from form import Register, Login, AddTradeForm, DailyTargetForm
-from database import db, User, Trades, DailyTarget
-from datetime import date, timedelta
-from werkzeug.security import generate_password_hash, check_password_hash
+from database import db
 
 import os
 from dotenv import load_dotenv
 
+# Import our new Blueprints
+from auth_routes import auth_bp
+from main_routes import main_bp
+
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 root_dir = os.path.abspath(os.path.join(base_dir, '..'))
+
 app = Flask(__name__, 
             template_folder=os.path.join(base_dir, 'templets'),
             static_folder=os.path.join(base_dir, 'static'),
@@ -25,282 +26,11 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI'
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret')
 
 csrf = CSRFProtect(app)
-
 db.init_app(app)
 
-@app.route('/')
-@app.route('/index')
-def index():
-    """Public landing page or marketing page."""
-
-    if 'user_id' in session:
-        return redirect(url_for('home'))
-    return render_template('index.html')
-
-
-@app.route('/delete_trade/<int:trade_id>', methods=['POST'])
-def delete_trade(trade_id):
-    if 'user_id' not in session:
-        return redirect(url_for('login'))
-        
-    trade_to_delete = Trades.query.get_or_404(trade_id)
-    
-    if trade_to_delete.user_id != session['user_id']:
-        flash("Unauthorized", "danger")
-        return redirect(url_for('home'))
-
-    try:
-        db.session.delete(trade_to_delete)
-        db.session.commit()
-        flash("Trade deleted successfully!", "success")
-    except:
-        flash("There was a problem deleting that trade.", "error")
-        
-    return redirect(url_for('home'))
-
-@app.route('/edit_trade/<int:trade_id>', methods=['GET', 'POST'])
-def edit_trade(trade_id):
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('login'))
-
-    trade_to_edit = Trades.query.get_or_404(trade_id)
-
-    if trade_to_edit.user_id != session['user_id']:
-        flash("Unauthorized", "danger")
-        return redirect(url_for('home'))
-
-    form = AddTradeForm(obj=trade_to_edit)
-    
-    if form.validate_on_submit():
-        trade_to_edit.trade_instruments = form.trade_instruments.data
-        trade_to_edit.trade_lots = form.trade_lots.data
-        trade_to_edit.trade_date = form.trade_date.data
-        trade_to_edit.trade_pnl = form.trade_pnl.data
-        trade_to_edit.trade_reason = form.trade_reason.data
-        
-        try:
-            db.session.commit()
-            flash('Trade updated successfully!', 'success')
-            return redirect(url_for('home'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Failed to update trade.', 'danger')
-            print(f"Database error during trade update: {e}")
-
-    return render_template('edit_trade.html', form=form, trade=trade_to_edit)
-
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    """User registration route."""
-    
-    if 'user_id' in session:
-        return redirect(url_for('home'))
-
-    form = Register()
-    if form.validate_on_submit():
-        
-        hashed_password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
-        user = User(
-            Name=form.Name.data,
-            Email=form.Email.data,
-            Password=hashed_password, 
-            Daily_max_trade=form.Avg_Daily_max_trade.data
-        )
-        try:
-            db.session.add(user)
-            db.session.commit()
-            flash('Registration successful! You can now log in.', 'success')
-            return redirect(url_for('login'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Registration failed. Email or Username might already exist.', 'danger')
-            print(f"Database error during registration: {e}")
-
-    return render_template('register.html', form=form)
-
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    """User login route."""
-    # If a user is already logged in, redirect them to their home/dashboard
-    if 'user_id' in session:
-        return redirect(url_for('home'))
-
-    form = Login()
-    if form.validate_on_submit():
-        user = User.query.filter_by(Email=form.Email.data).first()
-        
-        if user:
-            # Check hashed password
-            if check_password_hash(user.Password, form.Password.data):
-                session['user_id'] = user.id
-                flash('Login successful!', 'success')
-                return redirect(url_for('home'))
-            # Fallback for plain text passwords in the current database (auto-upgrades them to hashes)
-            elif user.Password == form.Password.data:
-                user.Password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
-                db.session.commit()
-                session['user_id'] = user.id
-                flash('Login successful!', 'success')
-                return redirect(url_for('home'))
-            else:
-                flash('Invalid email or password.', 'danger')
-        else:
-            flash('Invalid email or password.', 'danger')
-
-    return render_template('login.html', form=form)
-
-
-@app.route('/logout')
-def logout():
-    """User logout route."""
-    # Clear the session data
-    session.pop('user_id', None)
-    flash('You have been logged out.', 'info')
-    return redirect(url_for('login'))
-
-
-
-@app.route('/home')
-def home():
-    """
-    User dashboard (the primary page after logging in).
-    Only accessible by logged-in users.
-    """
-   
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('login'))
-
-    
-    user = db.session.get(User, session['user_id'])
-    
-    
-    if not user:
-        session.pop('user_id', None)
-        flash('An error occurred. Please log in again.', 'danger')
-        return redirect(url_for('login'))
-
-    today = date.today()
-    # Check for today's DailyTarget
-    today_target = DailyTarget.query.filter_by(user_id=user.id, date=today).first()
-    
-    # If no target set for today, enforce setting it
-    if not today_target:
-        return redirect(url_for('set_daily_target'))
-
-    # All trades for this user
-    user_trades = Trades.query.filter_by(user_id=user.id).all()
-
-    # Calculate last 7 days history
-    daily_history = []
-    for i in range(7):
-        d = today - timedelta(days=i)
-        
-        # Filter trades for this specific day
-        day_trades = [t for t in user_trades if t.trade_date.date() == d]
-        day_pnl = sum(t.trade_pnl for t in day_trades)
-        day_volume = len(day_trades)
-        
-        daily_history.append({
-            'date': d,
-            'pnl': day_pnl,
-            'volume': day_volume
-        })
-    
-    # Reverse so it shows chronologically (oldest of the 7 days on the left/first)
-    daily_history.reverse()
-
-    # Count today's trades to compute remaining trades from dynamic today_target
-    trades_today = len([t for t in user_trades if t.trade_date.date() == today])
-    remaining_trades = max(0, today_target.max_trades - trades_today)
-
-    # Pagination for the execution log table
-    page = request.args.get('page', 1, type=int)
-    log_trades = Trades.query.filter_by(user_id=user.id).order_by(Trades.trade_date.desc(), Trades.id.desc()).paginate(page=page, per_page=10, error_out=False)
-
-    return render_template(
-        'home.html',
-        user=user,
-        trades=user_trades,
-        log_trades=log_trades,
-        remaining_trades=remaining_trades,
-        trades_today=trades_today,
-        daily_history=daily_history,
-        today_target=today_target
-    )
-
-@app.route('/set_daily_target', methods=['GET', 'POST'])
-def set_daily_target():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('login'))
-
-    user = db.session.get(User, session['user_id'])
-    if not user:
-        session.pop('user_id', None)
-        return redirect(url_for('login'))
-
-    today = date.today()
-    existing_target = DailyTarget.query.filter_by(user_id=user.id, date=today).first()
-    if existing_target:
-        return redirect(url_for('home'))
-
-    form = DailyTargetForm()
-    if form.validate_on_submit():
-        new_target = DailyTarget(
-            user_id=user.id,
-            date=today,
-            max_trades=form.max_trades.data
-        )
-        try:
-            db.session.add(new_target)
-            db.session.commit()
-            flash('Target set for today! Let\'s crush it!', 'success')
-            return redirect(url_for('home'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Failed to set daily target. Try again.', 'danger')
-            print(f"Database error setting daily target: {e}")
-
-    yesterday = today - timedelta(days=1)
-    yesterday_trades = Trades.query.filter_by(user_id=user.id).all()
-    yesterday_trades = [t for t in yesterday_trades if t.trade_date.date() == yesterday]
-    yesterday_pnl = sum(t.trade_pnl for t in yesterday_trades)
-    yesterday_volume = len(yesterday_trades)
-
-    return render_template('set_daily_target.html', form=form, user=user, yesterday_pnl=yesterday_pnl, yesterday_volume=yesterday_volume)
-
-@app.route('/add_trade', methods=['GET', 'POST'])
-def add_trade():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('login'))
-
-    form = AddTradeForm()
-    if form.validate_on_submit():
-        trade = Trades(
-            user_id=session['user_id'],
-            trade_instruments=form.trade_instruments.data,
-            trade_lots=form.trade_lots.data,
-            trade_date=form.trade_date.data,
-            trade_pnl=form.trade_pnl.data,
-            trade_reason=form.trade_reason.data
-        )
-        try:
-            db.session.add(trade)
-            db.session.commit()
-            flash('Trade added successfully!', 'success')
-            return redirect(url_for('home'))
-        except Exception as e:
-            db.session.rollback()
-            flash('Failed to add trade.', 'danger')
-            print(f"Database error during trade addition: {e}")
-
-    return render_template('add_trade.html', form=form)
-
-
+# Register Blueprints
+app.register_blueprint(auth_bp)
+app.register_blueprint(main_bp)
 
 
 if __name__ == '__main__':
@@ -308,4 +38,3 @@ if __name__ == '__main__':
         db.create_all()
     
     app.run(debug=True)
-

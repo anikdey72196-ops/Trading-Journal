@@ -5,7 +5,12 @@
 <!-- Calculate Win Rate and PnL metrics purely in Jinja for the visual array -->
 {% set ns = namespace(total_pnl=0, wins=0, losses=0) %}
 {% for trade in trades %}
-    {% set ns.total_pnl = ns.total_pnl + trade.trade_pnl %}
+    {% if trade.profit_currency == 'INR' %}
+        {% set pnl_usd = trade.trade_pnl / inr_per_usd %}
+    {% else %}
+        {% set pnl_usd = trade.trade_pnl %}
+    {% endif %}
+    {% set ns.total_pnl = ns.total_pnl + pnl_usd %}
     {% if trade.trade_pnl > 0 %}
         {% set ns.wins = ns.wins + 1 %}
     {% elif trade.trade_pnl < 0 %}
@@ -39,13 +44,14 @@
             <span class="stat-title">Net Liquidity (P&L)</span>
             <span class="stat-icon"><i class="fa-solid fa-dollar-sign"></i></span>
         </div>
-        <div class="stat-value">${{ "%.2f"|format(ns.total_pnl) }}</div>
+        <div class="stat-value">${{ "%.2f"|format(total_pnl_usd) }}</div>
         <div class="stat-sub">
-            {% if ns.total_pnl >= 0 %}
+            {% if total_pnl_usd >= 0 %}
                 <span class="trend-up"><i class="fa-solid fa-arrow-up"></i> In Profit</span>
             {% else %}
                 <span class="trend-down"><i class="fa-solid fa-arrow-down"></i> In Drawdown</span>
             {% endif %}
+            &nbsp;<span style="color:#64748b; font-size:0.78rem;">1 USD ≈ ₹{{ "%.1f"|format(inr_per_usd) }}</span>
         </div>
     </div>
 
@@ -113,6 +119,7 @@
                     <th>Instrument</th>
                     <th>Volume/Lot Size</th>
                     <th>Net P&L</th>
+                    <th>In USD</th>
                     <th>Reason</th>
                     <th>Actions</th>
                 </tr>
@@ -128,8 +135,28 @@
                     
                     <td class="pnl-cell {{ 'pnl-positive' if trade.trade_pnl >= 0 else 'pnl-negative' }}">
                         <div class="pnl-pill">
-                            {{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.2f"|format(trade.trade_pnl) }}
+                            {% if trade.profit_currency == 'INR' %}
+                                ₹{{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.0f"|format(trade.trade_pnl) }}
+                            {% else %}
+                                ${{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.2f"|format(trade.trade_pnl) }}
+                            {% endif %}
                         </div>
+                        {% if trade.profit_currency == 'INR' %}
+                            <span style="font-size:0.72rem; color:#64748b; margin-top:2px; display:block;">
+                                <i class="fa-brands fa-india"></i> INR
+                            </span>
+                        {% endif %}
+                    </td>
+
+                    <td class="pnl-cell {{ 'pnl-positive' if trade.trade_pnl >= 0 else 'pnl-negative' }}">
+                        {% if trade.profit_currency == 'INR' %}
+                            {% set usd_eq = trade.trade_pnl / inr_per_usd %}
+                            <div class="pnl-pill" style="opacity:0.75; font-size:0.88rem;">
+                                ${{ '+' if usd_eq >= 0 else '' }}{{ "%.2f"|format(usd_eq) }}
+                            </div>
+                        {% else %}
+                            <span style="color:#475569; font-size:0.85rem;">—</span>
+                        {% endif %}
                     </td>
                     
                     <td class="col-reason" style="color: #94a3b8; font-size: 0.9rem; max-width: 150px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{ trade.trade_reason }}">
@@ -137,8 +164,8 @@
                     </td>
                     
                     <td class="col-actions" style="text-align: right;">
-                        <a href="{{ url_for('edit_trade', trade_id=trade.id) }}" style="color: #6366f1; margin-right: 10px; text-decoration: none;" title="Edit Trade"><i class="fa-solid fa-pen"></i></a>
-                        <form action="{{ url_for('delete_trade', trade_id=trade.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this trade?');">
+                        <a href="{{ url_for('main.edit_trade', trade_id=trade.id) }}" style="color: #6366f1; margin-right: 10px; text-decoration: none;" title="Edit Trade"><i class="fa-solid fa-pen"></i></a>
+                        <form action="{{ url_for('main.delete_trade', trade_id=trade.id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this trade?');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" style="background: none; border: none; color: #f87171; cursor: pointer; padding: 0;" title="Delete Trade"><i class="fa-solid fa-trash"></i></button>
                         </form>
@@ -153,7 +180,7 @@
         {% if log_trades.pages > 1 %}
         <div class="pagination-controls" style="display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1.5rem;">
             {% if log_trades.has_prev %}
-                <a href="{{ url_for('home', page=log_trades.prev_num) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.05); color:#94a3b8; padding: 0.4rem 1rem; border-radius: 6px; text-decoration: none; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">&laquo; Prev</a>
+                <a href="{{ url_for('main.home', page=log_trades.prev_num) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.05); color:#94a3b8; padding: 0.4rem 1rem; border-radius: 6px; text-decoration: none; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">&laquo; Prev</a>
             {% else %}
                 <span class="btn btn-sm" style="background: rgba(255,255,255,0.02); color:#475569; padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); cursor: not-allowed;">&laquo; Prev</span>
             {% endif %}
@@ -161,7 +188,7 @@
             <span style="color: #cbd5e1; font-size: 0.9rem;">Page <strong style="color: #fff;">{{ log_trades.page }}</strong> of <strong style="color: #fff;">{{ log_trades.pages }}</strong></span>
             
             {% if log_trades.has_next %}
-                <a href="{{ url_for('home', page=log_trades.next_num) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.05); color:#94a3b8; padding: 0.4rem 1rem; border-radius: 6px; text-decoration: none; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">Next &raquo;</a>
+                <a href="{{ url_for('main.home', page=log_trades.next_num) }}" class="btn btn-sm" style="background: rgba(255,255,255,0.05); color:#94a3b8; padding: 0.4rem 1rem; border-radius: 6px; text-decoration: none; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">Next &raquo;</a>
             {% else %}
                 <span class="btn btn-sm" style="background: rgba(255,255,255,0.02); color:#475569; padding: 0.4rem 1rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.05); cursor: not-allowed;">Next &raquo;</span>
             {% endif %}

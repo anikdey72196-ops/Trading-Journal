@@ -150,8 +150,8 @@
 <nav>
     <span class="nav-brand">📈 Trading Journal</span>
     <div class="nav-links">
-        <a href="/login" class="btn-login">Login</a>
-        <a href="/register" class="btn-register">Get Started</a>
+        <a href="{{ url_for('auth.login') }}" class="btn-login">Login</a>
+        <a href="{{ url_for('auth.register') }}" class="btn-register">Get Started</a>
     </div>
 </nav>
 
@@ -160,8 +160,8 @@
     <h1>Master Your Trades,<br>Control Your Day</h1>
     <p>Log every trade, enforce your daily limit, and review your performance — all in one clean dashboard.</p>
     <div class="hero-cta">
-        <a href="/register" class="cta-primary">Start Tracking Free</a>
-        <a href="/login" class="cta-secondary">I have an account →</a>
+        <a href="{{ url_for('auth.register') }}" class="cta-primary">Start Tracking Free</a>
+        <a href="{{ url_for('auth.login') }}" class="cta-secondary">I have an account →</a>
     </div>
 </section>
 

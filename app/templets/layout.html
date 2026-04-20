@@ -20,7 +20,7 @@
         <!-- Premium Navbar / Header -->
         <header class="header-section">
             <div class="brand">
-                <a href="{{ url_for('home') }}" style="text-decoration: none; color: inherit;">
+                <a href="{{ url_for('main.home') }}" style="text-decoration: none; color: inherit;">
                     <h1><span class="brand-icon"><i class="fa-solid fa-chart-simple"></i></span> {{ user.Name + ' ' if user else '' }}Terminal</h1>
                 </a>
                 <p>For 1% Traders</p>
@@ -28,7 +28,7 @@
             
             <div class="header-controls">
                 
-                <a href="{{ url_for('add_trade') }}" class="btn-primary" id="addTradeBtn" data-remaining="{{ remaining_trades | default(10) }}">
+                <a href="{{ url_for('main.add_trade') }}" class="btn-primary" id="addTradeBtn" data-remaining="{{ remaining_trades | default(10) }}">
                     <i class="fa-solid fa-plus"></i> New Order
                 </a>
                 
@@ -38,7 +38,7 @@
                     {{ user.Name if user else 'Trader' }}
                 </div>
                 
-                <a href="{{ url_for('logout') }}" class="btn-logout" title="Sign Out">
+                <a href="{{ url_for('auth.logout') }}" class="btn-logout" title="Sign Out">
                     <i class="fa-solid fa-arrow-right-from-bracket"></i>
                 </a>
             </div>

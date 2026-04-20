@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField, PasswordField, IntegerField, EmailField, DateField, SelectMultipleField, widgets
+from wtforms import StringField, SubmitField, PasswordField, IntegerField, EmailField, DateField, SelectMultipleField, SelectField, widgets
 from wtforms.validators import DataRequired
 
 class MultiCheckboxField(SelectMultipleField):
@@ -23,7 +23,8 @@ class AddTradeForm(FlaskForm):
     trade_lots = IntegerField('Trade Lots', validators=[DataRequired()], render_kw={"placeholder": "e.g. 1"})
     trade_date = DateField('Trade Date', validators=[DataRequired()])
     trade_pnl = IntegerField('Trade PnL', validators=[DataRequired()], render_kw={"placeholder": "e.g. 500 or -200"})
-    trade_reason = StringField('Trade Reason / Notes', render_kw={"placeholder": "e.g. Support bounce, News... (Optional)"})
+    trade_reason = StringField('Trade Reason / Notes', render_kw={"placeholder": "e.g. respect the Support zone, Liquidity... (Optional)"})
+    Profit_currency = SelectField('Profit Currency', choices=[('INR', 'INR'), ('USD', 'USD')], validators=[DataRequired()])
     Rules = MultiCheckboxField('Rules', choices=[
         ('fixed_sl', 'Fixed Stop loss'),
         ('no_overtrading', 'No over trading'),

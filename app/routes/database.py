@@ -16,6 +16,7 @@ class Trades(db.Model):
     trade_date = db.Column(db.DateTime, nullable=False)
     trade_pnl = db.Column(db.Integer, nullable=False)
     trade_reason = db.Column(db.String(255), nullable=True)
+    profit_currency = db.Column(db.String(10), nullable=False, default='USD')
 
 class Remaining_trade(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -37,3 +38,8 @@ class Obey_rules(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     obey_rules = db.Column(db.String(80), nullable=False)
+
+class Profit_currency(db.Model):
+    id=db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    profit_currency = db.Column(db.String(80), nullable=False)
