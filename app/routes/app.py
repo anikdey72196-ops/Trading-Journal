@@ -37,9 +37,9 @@ db.init_app(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
 
+# Create all DB tables on startup (runs under both gunicorn and python app.py)
+with app.app_context():
+    db.create_all()
 
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    
     app.run(debug=True)
