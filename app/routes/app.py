@@ -15,7 +15,7 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 root_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
 app = Flask(__name__, 
-            template_folder=os.path.join(base_dir, 'templets'),
+            template_folder=os.path.join(base_dir, 'templates'),
             static_folder=os.path.join(base_dir, 'static'),
             instance_path=os.path.join(root_dir, 'instance'))
 
