@@ -1,6 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
 from database import db
 
 import os
@@ -24,6 +25,10 @@ load_dotenv(env_path)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('SQLALCHEMY_DATABASE_URI', 'sqlite:///trading_journal.db')
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret')
+
+# Tell Flask to trust Railway's reverse proxy (fixes HTTPS/session issues)
+# x_for=1 means 1 proxy is in front of us (Railway's load balancer)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 csrf = CSRFProtect(app)
 db.init_app(app)
