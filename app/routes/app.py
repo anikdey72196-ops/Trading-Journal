@@ -38,13 +38,13 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
 
 # Create all DB tables on startup (runs under both gunicorn and python app.py)
-try:
-    with app.app_context():
-        db.create_all()
-        print("✅ Database tables created/verified successfully.")
-except Exception as e:
-    print(f"⚠️  WARNING: Could not create DB tables at startup: {e}")
-    print(f"   DB URI used: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT SET')}")
+
+with app.app_context():
+    db.create_all()
+    print("✅ Database tables created/verified successfully.")
+
+# print(f"⚠️  WARNING: Could not create DB tables at startup: {e}")
+# print(f"   DB URI used: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT SET')}")
 
 if __name__ == '__main__':
     app.run(debug=True)
