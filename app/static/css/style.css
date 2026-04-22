@@ -233,7 +233,7 @@ body::after {
     content: '';
     position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
-    background: radial-gradient(circle at top right, rgba(255,255,255,0.03), transparent 70%);
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.316), transparent 70%);
     pointer-events: none;
 }
 

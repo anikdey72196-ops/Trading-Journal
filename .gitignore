@@ -6,3 +6,6 @@ __pycache__/
 instance/
 app/instance/
 .env
+node_modules/
+package-lock.json
+package.json

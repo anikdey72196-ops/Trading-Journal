@@ -1,0 +1,211 @@
+{% extends "layout_dashboard.html" %}
+
+{% block content %}
+<header class="mb-8">
+    <h1 class="font-headline-xl text-3xl md:text-4xl lg:text-[2rem] text-slate-50 font-bold tracking-tight mb-2">Performance Analytics</h1>
+    <p class="text-slate-400 font-body-base">Visualize your trading journey over time.</p>
+</header>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+    <!-- Equity Curve Chart -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm lg:col-span-2">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-chart-line text-blue-500 mr-2"></i> The Equity Curve (USD)</h2>
+        </div>
+        <div class="relative h-[300px] w-full">
+            <canvas id="equityCurveChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Win Rate Chart -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm lg:col-span-1 flex flex-col">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-chart-pie text-blue-500 mr-2"></i> Win Rate</h2>
+        </div>
+        <div class="relative flex-1 w-full flex items-center justify-center min-h-[250px]">
+            <canvas id="winRateChart"></canvas>
+        </div>
+        {% if wins == 0 and losses == 0 %}
+        <div class="absolute inset-0 flex items-center justify-center bg-slate-900/80 rounded-xl backdrop-blur-sm z-10">
+            <p class="text-slate-400 font-medium">No Trades Logged</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="grid grid-cols-1 gap-8 mb-8">
+    <!-- Performance by Setup Chart -->
+    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 shadow-sm">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-chart-bar text-blue-500 mr-2"></i> Performance by Instrument (USD)</h2>
+        </div>
+        <div class="relative h-[300px] w-full">
+            <canvas id="setupChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Load Chart.js from CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const dates = {{ dates | safe }};
+        const cumulativePnls = {{ cumulative_pnls | safe }};
+        const wins = {{ wins }};
+        const losses = {{ losses }};
+        const setupLabels = {{ setup_labels | safe }};
+        const setupData = {{ setup_data | safe }};
+
+        // Common Chart.js styling
+        Chart.defaults.color = '#94a3b8';
+        Chart.defaults.font.family = 'Inter, sans-serif';
+
+        // 1. The Equity Curve Chart
+        const ctxEq = document.getElementById('equityCurveChart').getContext('2d');
+        new Chart(ctxEq, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Cumulative Net P&L ($)',
+                    data: cumulativePnls,
+                    borderColor: '#3b82f6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointBackgroundColor: '#1e3a8a',
+                    pointBorderColor: '#60a5fa',
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { color: '#1e293b' },
+                        ticks: { maxTicksLimit: 10 }
+                    },
+                    y: {
+                        grid: { color: '#1e293b' },
+                        ticks: {
+                            callback: function(value) { return '$' + value; }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return 'Net P&L: $' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Win Rate Doughnut Chart
+        const ctxWin = document.getElementById('winRateChart').getContext('2d');
+        new Chart(ctxWin, {
+            type: 'doughnut',
+            data: {
+                labels: ['Wins', 'Losses'],
+                datasets: [{
+                    data: [wins, losses],
+                    backgroundColor: ['#10b981', '#f43f5e'],
+                    borderColor: ['#064e3b', '#881337'],
+                    borderWidth: 2,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { 
+                            color: '#cbd5e1', 
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                label += context.parsed + ' Trades';
+                                return label;
+                            }
+                        }
+                    }
+                },
+                cutout: '70%'
+            }
+        });
+
+        // 3. Performance by Setup Bar Chart
+        const ctxSetup = document.getElementById('setupChart').getContext('2d');
+        new Chart(ctxSetup, {
+            type: 'bar',
+            data: {
+                labels: setupLabels,
+                datasets: [{
+                    label: 'Net P&L ($)',
+                    data: setupData,
+                    backgroundColor: setupData.map(p => p >= 0 ? '#10b981' : '#f43f5e'),
+                    borderRadius: 4,
+                    maxBarThickness: 40
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { maxTicksLimit: 15 }
+                    },
+                    y: {
+                        grid: { color: '#1e293b' },
+                        ticks: {
+                            callback: function(value) { return '$' + value; }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0f172a',
+                        titleColor: '#f8fafc',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#334155',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: function(context) {
+                                return 'P&L: $' + context.parsed.y.toFixed(2);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

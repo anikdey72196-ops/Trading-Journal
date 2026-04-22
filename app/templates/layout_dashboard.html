@@ -1,0 +1,103 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Tradelytics | Professional Trading Journal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;family=Space+Grotesk:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#adc6ff",
+                        "secondary": "#c0c1ff"
+                    },
+                    "fontFamily": {
+                        "label-caps": ["Space Grotesk"],
+                        "body-base": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "headline-xl": ["Manrope"],
+                        "headline-md": ["Manrope"],
+                        "data-mono": ["Space Grotesk"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #020617;
+            color: #dae2fd;
+        }
+    </style>
+</head>
+<body class="font-body-base antialiased">
+<header class="sticky top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center h-14 px-6">
+<div class="flex items-center gap-8">
+<a href="{{ url_for('main.home') }}" class="text-xl font-bold tracking-tighter text-slate-50 font-headline-xl no-underline">
+    <i class="fa-solid fa-chart-simple text-blue-500 mr-2"></i>TRADELYTICS
+</a>
+<nav class="hidden md:flex gap-6 items-center">
+<a class="{% if request.endpoint == 'main.home' %}text-blue-400 font-semibold{% else %}text-slate-500 hover:text-slate-200{% endif %} font-manrope tracking-tight text-sm transition-all" href="{{ url_for('main.home') }}">Overview</a>
+<a class="text-slate-500 hover:text-red-400 hover:bg-slate-900/50 px-3 py-1 rounded transition-all font-manrope tracking-tight text-sm" href="{{ url_for('auth.logout') }}">Sign Out</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+
+<a href="{{ url_for('main.add_trade') }}" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm border border-blue-500/50 hidden sm:flex">
+    <i class="fa-solid fa-plus"></i> New Order
+</a>
+<div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-slate-700 mx-2">
+    {{ user.Name[0]|upper if user else 'U' }}
+</div>
+<div class="text-sm font-semibold text-slate-300 hidden md:block mr-2">
+    {{ user.Name if user else 'Trader' }}
+</div>
+</div>
+</header>
+<div class="flex">
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-64 border-r border-slate-800 bg-slate-900 flex flex-col py-4 hidden lg:flex z-40">
+<div class="px-6 mb-8">
+<p class="text-blue-400 font-headline-md text-sm font-bold tracking-tight">Main Dashboard</p>
+<p class="text-slate-500 text-[11px] uppercase tracking-widest font-semibold flex items-center gap-2"><i class="fa-solid fa-bolt text-yellow-500"></i> Precision Execution</p>
+</div>
+<nav class="flex-1">
+<a class="{% if request.endpoint == 'main.home' %}bg-blue-500/10 text-blue-400 border-r-2 border-blue-500{% else %}text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-r-2 border-transparent{% endif %} flex items-center gap-3 px-6 py-3 font-manrope text-sm font-medium transition-colors" href="{{ url_for('main.home') }}">
+<span class="material-symbols-outlined">dashboard</span>
+                    Overview
+                </a>
+<a class="{% if request.endpoint == 'main.performance_log' %}bg-blue-500/10 text-blue-400 border-r-2 border-blue-500{% else %}text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-r-2 border-transparent{% endif %} flex items-center gap-3 px-6 py-3 font-manrope text-sm font-medium transition-colors" href="{{ url_for('main.performance_log') }}">
+<span class="material-symbols-outlined">analytics</span>
+                    Performance Logs
+                </a>
+</nav>
+</aside>
+<main class="lg:ml-64 flex-1 min-h-[calc(100vh-3.5rem)] p-4 md:p-8 bg-[#020617] w-full max-w-[100vw]">
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="mb-6 w-full">
+                {% for category, message in messages %}
+                    <div class="bg-slate-800/80 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow backdrop-blur-sm flex items-center gap-3 mb-2">
+                        <i class="fa-solid fa-bell text-blue-400"></i>
+                        <span class="text-sm">{{ message }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    {% endblock %}
+    
+</main>
+</div>
+<script src="{{ url_for('static', filename='javascript/script.js') }}"></script>
+</body></html>

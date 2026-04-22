@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from database import db, User, Trades, DailyTarget
 from form import AddTradeForm, DailyTargetForm
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 import requests as http_requests
 
 
@@ -80,7 +80,9 @@ def home():
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
-    log_trades = Trades.query.filter_by(user_id=user.id).order_by(Trades.trade_date.desc(), Trades.id.desc()).paginate(page=page, per_page=10, error_out=False)
+    today_start = datetime.combine(today, datetime.min.time())
+    today_end = datetime.combine(today, datetime.max.time())
+    log_trades = Trades.query.filter(Trades.user_id == user.id, Trades.trade_date >= today_start, Trades.trade_date <= today_end).order_by(Trades.trade_date.desc(), Trades.id.desc()).paginate(page=page, per_page=10, error_out=False)
 
     return render_template(
         'home.html',
@@ -203,3 +205,60 @@ def delete_trade(trade_id):
         print(f"Database error during trade deletion: {e}")
         
     return redirect(url_for('main.home'))
+
+
+# -------------------------- performance log -------------------------
+
+@main_bp.route("/performance_log")
+def performance_log():
+    if 'user_id' not in session:
+        flash('Please log in to access this page.', 'warning')
+        return redirect(url_for('auth.login'))
+        
+    user = db.session.get(User, session['user_id'])
+    if not user:
+        session.pop('user_id', None)
+        return redirect(url_for('auth.login'))
+        
+    user_trades = Trades.query.filter_by(user_id=user.id).order_by(Trades.trade_date.asc()).all()
+    inr_per_usd = get_inr_per_usd()
+    
+    dates = []
+    pnls_usd = []
+    cumulative_pnl_usd = 0
+    cumulative_pnls_usd = []
+    wins = 0
+    losses = 0
+    setup_pnl = {}
+    
+    for t in user_trades:
+        dates.append(t.trade_date.strftime('%b %d'))
+        p_usd = pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd)
+        pnls_usd.append(round(p_usd, 2))
+        cumulative_pnl_usd += p_usd
+        cumulative_pnls_usd.append(round(cumulative_pnl_usd, 2))
+        
+        if p_usd > 0:
+            wins += 1
+        elif p_usd < 0:
+            losses += 1
+            
+        setup = t.trade_instruments.strip() if t.trade_instruments and t.trade_instruments.strip() else "Unknown"
+        if len(setup) > 15:
+            setup = setup[:15] + "..."
+            
+        setup_pnl[setup] = setup_pnl.get(setup, 0) + p_usd
+        
+    setup_labels = list(setup_pnl.keys())
+    setup_data = [round(v, 2) for v in setup_pnl.values()]
+        
+    return render_template('performance_log.html', 
+                           user=user, 
+                           dates=dates, 
+                           pnls=pnls_usd, 
+                           cumulative_pnls=cumulative_pnls_usd,
+                           wins=wins,
+                           losses=losses,
+                           setup_labels=setup_labels,
+                           setup_data=setup_data)
+    
