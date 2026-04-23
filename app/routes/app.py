@@ -31,6 +31,8 @@ if database_url:
     # Railway provides 'mysql://...' but SQLAlchemy needs 'mysql+pymysql://...'
     if database_url.startswith('mysql://'):
         database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+    elif database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
 else:
     # Try to build the URL from individual MYSQL_* vars
     mysql_host = os.environ.get('MYSQL_HOST', '').strip()
