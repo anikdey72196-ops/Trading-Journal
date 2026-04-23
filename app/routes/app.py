@@ -24,11 +24,15 @@ env_path = os.path.join(base_dir, '.env')
 load_dotenv(env_path)
 
 # Build the database URL from environment variables
-# Railway sets individual MYSQL_* vars; it may also set DATABASE_URL or MYSQL_URL
+# Railway MySQL plugin sets MYSQL_URL (full connection string) or individual MYSQL_* vars
 database_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
 
-if not database_url:
-    # Try to build the URL from individual MYSQL_* vars (how Railway exposes them)
+if database_url:
+    # Railway provides 'mysql://...' but SQLAlchemy needs 'mysql+pymysql://...'
+    if database_url.startswith('mysql://'):
+        database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+else:
+    # Try to build the URL from individual MYSQL_* vars
     mysql_host = os.environ.get('MYSQL_HOST', '').strip()
     mysql_port = os.environ.get('MYSQL_PORT', '3306').strip()
     mysql_user = os.environ.get('MYSQL_USER', '').strip()
@@ -38,16 +42,17 @@ if not database_url:
     if mysql_host and mysql_user and mysql_password and mysql_db:
         database_url = f"mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_db}"
 
-# If still no valid URL (i.e., running locally without a DB), fall back to SQLite
+# If still no valid URL, fall back to SQLite (local dev only)
 if not database_url:
     print("WARNING: No database URL configured. Falling back to local SQLite.")
     database_url = 'sqlite:///' + os.path.join(app.instance_path, 'trading_journal.db')
+
+print(f"Using database: {database_url.split('@')[-1] if '@' in database_url else database_url}")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret')
 
 # Tell Flask to trust Railway's reverse proxy (fixes HTTPS/session issues)
-# x_for=1 means 1 proxy is in front of us (Railway's load balancer)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 csrf = CSRFProtect(app)
@@ -57,14 +62,15 @@ db.init_app(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
 
-# Create all DB tables on startup (runs under both gunicorn and python app.py)
-
+# Create all DB tables on startup — wrapped in try/except so a slow DB
+# connection at boot time doesn't crash the entire gunicorn process
 with app.app_context():
-    db.create_all()
-    print("Database tables created/verified successfully.")
-
-# print(f"WARNING: Could not create DB tables at startup: {e}")
-# print(f"   DB URI used: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT SET')}")
+    try:
+        db.create_all()
+        print("Database tables created/verified successfully.")
+    except Exception as e:
+        print(f"WARNING: Could not create DB tables at startup: {e}")
+        print(f"DB URI used: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT SET')}")
 
 if __name__ == '__main__':
     # port = int(os.environ.get("PORT", 5000))
