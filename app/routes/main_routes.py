@@ -60,23 +60,33 @@ def home():
     # ---- Live INR→USD rate ----
     inr_per_usd = get_inr_per_usd()
 
+    # ---- Process trades in a single pass ----
+    trades_by_date = {}
+    total_pnl_usd = 0.0
+
+    for t in user_trades:
+        t_date = t.trade_date.date()
+        p_usd = pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd)
+        total_pnl_usd += p_usd
+
+        if t_date not in trades_by_date:
+            trades_by_date[t_date] = {'pnl': 0.0, 'volume': 0}
+        trades_by_date[t_date]['pnl'] += p_usd
+        trades_by_date[t_date]['volume'] += 1
+
     # ---- 7-day history (PnL converted to USD for charting) ----
     daily_history = []
     for i in range(7):
         d = today - timedelta(days=i)
-        day_trades = [t for t in user_trades if t.trade_date.date() == d]
-        day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
+        day_data = trades_by_date.get(d, {'pnl': 0.0, 'volume': 0})
         daily_history.append({
             'date': d,
-            'pnl': day_pnl_usd,
-            'volume': len(day_trades)
+            'pnl': day_data['pnl'],
+            'volume': day_data['volume']
         })
     daily_history.reverse()
 
-    # ---- Total PnL in USD (across all history) ----
-    total_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in user_trades)
-
-    trades_today = len([t for t in user_trades if t.trade_date.date() == today])
+    trades_today = trades_by_date.get(today, {'volume': 0})['volume']
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
