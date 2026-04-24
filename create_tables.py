@@ -38,7 +38,7 @@ print(f"Connecting to: {database_url.split('@')[-1]}")
 # Minimal Flask app just for table creation
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'temp-secret')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 db.init_app(app)
 
 with app.app_context():
