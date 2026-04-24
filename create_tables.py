@@ -13,24 +13,14 @@ from flask import Flask
 from database import db
 
 # Build the DB URL from Railway env vars
-database_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
+database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    if database_url.startswith('mysql://'):
-        database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+    # SQLAlchemy 1.4+ dropped support for 'postgres://' in favor of 'postgresql://'
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
 else:
-    mysql_host = os.environ.get('MYSQL_HOST', '').strip()
-    mysql_port = os.environ.get('MYSQL_PORT', '3306').strip()
-    mysql_user = os.environ.get('MYSQL_USER', '').strip()
-    mysql_password = os.environ.get('MYSQL_PASSWORD', '').strip()
-    mysql_db = os.environ.get('MYSQL_DATABASE', '').strip()
-
-    if mysql_host and mysql_user and mysql_password and mysql_db:
-        database_url = f"mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_db}"
-
-if not database_url:
-    print("ERROR: No database URL found in environment variables.")
-    print("Set MYSQL_URL, DATABASE_URL, or individual MYSQL_* variables.")
+    print("ERROR: No DATABASE_URL found in environment variables.")
     sys.exit(1)
 
 print(f"Connecting to: {database_url.split('@')[-1]}")

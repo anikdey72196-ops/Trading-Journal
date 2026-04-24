@@ -24,27 +24,15 @@ env_path = os.path.join(base_dir, '.env')
 load_dotenv(env_path)
 
 # Build the database URL from environment variables
-# Railway MySQL plugin sets MYSQL_URL (full connection string) or individual MYSQL_* vars
-database_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
+database_url = os.environ.get('DATABASE_URL')
 
 if database_url:
-    # Railway provides 'mysql://...' but SQLAlchemy needs 'mysql+pymysql://...'
-    if database_url.startswith('mysql://'):
-        database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+    # SQLAlchemy 1.4+ dropped support for 'postgres://' in favor of 'postgresql://'
+    if database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
 else:
-    # Try to build the URL from individual MYSQL_* vars
-    mysql_host = os.environ.get('MYSQL_HOST', '').strip()
-    mysql_port = os.environ.get('MYSQL_PORT', '3306').strip()
-    mysql_user = os.environ.get('MYSQL_USER', '').strip()
-    mysql_password = os.environ.get('MYSQL_PASSWORD', '').strip()
-    mysql_db = os.environ.get('MYSQL_DATABASE', '').strip()
-
-    if mysql_host and mysql_user and mysql_password and mysql_db:
-        database_url = f"mysql+pymysql://{mysql_user}:{mysql_password}@{mysql_host}:{mysql_port}/{mysql_db}"
-
-# If still no valid URL, fall back to SQLite (local dev only)
-if not database_url:
-    print("WARNING: No database URL configured. Falling back to local SQLite.")
+    # Fall back to SQLite (local dev only)
+    print("WARNING: No DATABASE_URL configured. Falling back to local SQLite.")
     database_url = 'sqlite:///' + os.path.join(app.instance_path, 'trading_journal.db')
 
 print(f"Using database: {database_url.split('@')[-1] if '@' in database_url else database_url}")
