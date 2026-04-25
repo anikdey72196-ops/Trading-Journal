@@ -62,6 +62,22 @@ db.init_app(app)
 app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
 
+@app.context_processor
+def inject_global_vars():
+    from database import DailyTarget, Trades
+    from flask import session
+    from datetime import date
+    if 'user_id' in session:
+        today = date.today()
+        today_target = DailyTarget.query.filter_by(user_id=session['user_id'], date=today).first()
+        trades_today_count = Trades.query.filter(
+            Trades.user_id == session['user_id'],
+            db.func.date(Trades.trade_date) == today
+        ).count()
+        remaining_trades = max(0, today_target.max_trades - trades_today_count) if today_target else 10
+        return dict(remaining_trades=remaining_trades)
+    return dict(remaining_trades=10)
+
 # Create all DB tables on startup — wrapped in try/except so a slow DB
 # connection at boot time doesn't crash the entire gunicorn process
 with app.app_context():
