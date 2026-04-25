@@ -30,7 +30,7 @@ def register():
         except Exception as e:
             db.session.rollback()
             flash('Registration failed. Email or Username might already exist.', 'danger')
-            print(f"Database error during registration: {e}")
+            print("Database error during registration.")
 
     return render_template('register.html', form=form)
 
