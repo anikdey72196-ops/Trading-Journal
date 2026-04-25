@@ -3,6 +3,7 @@ from database import db, User, Trades, DailyTarget
 from form import AddTradeForm, DailyTargetForm
 from datetime import date, timedelta, datetime
 import requests as http_requests
+import time
 
 
 main_bp = Blueprint('main', __name__)
@@ -10,16 +11,32 @@ main_bp = Blueprint('main', __name__)
 # ------------------------- Currency Conversion -------------------------
 FALLBACK_INR_PER_USD = 84.0   # used only when the live API is unreachable
 
+_cached_inr_rate = None
+_cached_inr_rate_time = 0
+
 def get_inr_per_usd():
     """Fetch live INR-per-USD rate from a free API. Returns a float."""
+    global _cached_inr_rate, _cached_inr_rate_time
+
+    current_time = time.time()
+    # Cache for 1 hour (3600 seconds)
+    if _cached_inr_rate is not None and (current_time - _cached_inr_rate_time) < 3600:
+        return _cached_inr_rate
+
     try:
         resp = http_requests.get(
             'https://api.exchangerate-api.com/v4/latest/USD',
             timeout=3
         )
         data = resp.json()
-        return float(data['rates']['INR'])
+        rate = float(data['rates']['INR'])
+
+        _cached_inr_rate = rate
+        _cached_inr_rate_time = current_time
+        return rate
     except Exception:
+        # We can also cache the fallback so we don't keep hitting a broken API repeatedly,
+        # but returning it directly serves the purpose too. Let's stick to simple caching for success.
         return FALLBACK_INR_PER_USD
 
 def pnl_to_usd(pnl, currency, inr_per_usd):
