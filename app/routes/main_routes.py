@@ -4,6 +4,7 @@ from form import AddTradeForm, DailyTargetForm
 from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
 import requests as http_requests
+from utils import pnl_to_usd
 
 
 main_bp = Blueprint('main', __name__)
@@ -22,12 +23,6 @@ def get_inr_per_usd():
         return float(data['rates']['INR'])
     except Exception:
         return FALLBACK_INR_PER_USD
-
-def pnl_to_usd(pnl, currency, inr_per_usd):
-    """Convert a PnL value to USD. If already USD, return as-is."""
-    if currency == 'INR':
-        return pnl / inr_per_usd
-    return float(pnl)
 
 # ------------------------- Index -------------------------
 @main_bp.route('/')
