@@ -50,9 +50,15 @@
 </div>
 <div class="flex items-center gap-4">
 
+{% if remaining_trades is defined and remaining_trades == 0 %}
+<a href="#" onclick="event.preventDefault();" class="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm border border-blue-500/50 hidden sm:flex opacity-50 cursor-not-allowed blur-[1px]">
+    <i class="fa-solid fa-plus"></i> New Order
+</a>
+{% else %}
 <a href="{{ url_for('main.add_trade') }}" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm border border-blue-500/50 hidden sm:flex">
     <i class="fa-solid fa-plus"></i> New Order
 </a>
+{% endif %}
 <div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-slate-700 mx-2">
     {{ user.Name[0]|upper if user else 'U' }}
 </div>
@@ -81,6 +87,22 @@
 <main class="lg:ml-64 flex-1 min-h-[calc(100vh-3.5rem)] p-4 md:p-8 bg-[#020617] w-full max-w-[100vw]">
 
     <!-- Flash Messages -->
+    {% if remaining_trades is defined and remaining_trades == 0 %}
+        <div class="mb-6 w-full">
+            <div class="bg-emerald-900/40 border border-emerald-500/30 text-emerald-200 px-4 py-4 rounded-lg shadow backdrop-blur-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 shrink-0 text-xl">
+                        🎉
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-emerald-100 font-headline-md tracking-tight">Goal crushed! Time to celebrate (and review your trades).</h4>
+                        <p class="text-xs text-emerald-300/80 mt-0.5">You've reached your daily execution limit. Protect your mental capital.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="mb-6 w-full">
