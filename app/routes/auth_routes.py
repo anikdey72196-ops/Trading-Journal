@@ -65,7 +65,7 @@ def login():
     return render_template('login.html', form=form)
 
 # =================================  Logout  ============================
-@auth_bp.route('/logout')
+@auth_bp.route('/logout', methods=['POST'])
 def logout():
     """User logout route."""
     session.pop('user_id', None)

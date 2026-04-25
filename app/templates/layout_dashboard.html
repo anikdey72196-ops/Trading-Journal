@@ -45,7 +45,10 @@
 </a>
 <nav class="hidden md:flex gap-6 items-center">
 <a class="{% if request.endpoint == 'main.home' %}text-blue-400 font-semibold{% else %}text-slate-500 hover:text-slate-200{% endif %} font-manrope tracking-tight text-sm transition-all" href="{{ url_for('main.home') }}">Overview</a>
-<a class="text-slate-500 hover:text-red-400 hover:bg-slate-900/50 px-3 py-1 rounded transition-all font-manrope tracking-tight text-sm" href="{{ url_for('auth.logout') }}">Sign Out</a>
+<form method="POST" action="{{ url_for('auth.logout') }}" style="display:inline;">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+    <button type="submit" class="text-slate-500 hover:text-red-400 hover:bg-slate-900/50 px-3 py-1 rounded transition-all font-manrope tracking-tight text-sm border-0 bg-transparent cursor-pointer">Sign Out</button>
+</form>
 </nav>
 </div>
 <div class="flex items-center gap-4">
