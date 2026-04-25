@@ -138,6 +138,23 @@ def add_trade():
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
 
+    user_id = session['user_id']
+    today = date.today()
+
+    today_target = DailyTarget.query.filter_by(user_id=user_id, date=today).first()
+    if not today_target:
+        flash('Please set your daily target first.', 'warning')
+        return redirect(url_for('main.set_daily_target'))
+
+    trades_today_count = Trades.query.filter(
+        Trades.user_id == user_id,
+        db.func.date(Trades.trade_date) == today
+    ).count()
+
+    if trades_today_count >= today_target.max_trades:
+        flash('Daily trade limit reached! You cannot add more trades today.', 'danger')
+        return redirect(url_for('main.home'))
+
     form = AddTradeForm()
     if form.validate_on_submit():
         trade = Trades(user_id=session['user_id'], trade_instruments=form.trade_instruments.data, trade_lots=form.trade_lots.data, trade_date=form.trade_date.data, trade_pnl=form.trade_pnl.data, trade_reason=form.trade_reason.data, profit_currency=form.Profit_currency.data)
