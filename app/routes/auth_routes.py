@@ -50,13 +50,6 @@ def login():
                 session['user_id'] = user.id
                 flash('Login successful!', 'success')
                 return redirect(url_for('main.home'))
-            # Fallback for plain text passwords in the current database (auto-upgrades them to hashes)
-            elif user.Password == form.Password.data:
-                user.Password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
-                db.session.commit()
-                session['user_id'] = user.id
-                flash('Login successful!', 'success')
-                return redirect(url_for('main.home'))
             else:
                 flash('Invalid email or password.', 'danger')
         else:
