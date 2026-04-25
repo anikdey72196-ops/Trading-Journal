@@ -127,7 +127,7 @@ def set_daily_target():
             print(f"Database error setting daily target: {e}")
 
     yesterday = today - timedelta(days=1)
-    yesterday_trades = [t for t in Trades.query.filter_by(user_id=user.id).all() if t.trade_date.date() == yesterday]
+    yesterday_trades = Trades.query.filter(Trades.user_id == user.id, db.func.date(Trades.trade_date) == yesterday).all()
     
     return render_template('set_daily_target.html', form=form, user=user, yesterday_pnl=sum(t.trade_pnl for t in yesterday_trades), yesterday_volume=len(yesterday_trades))
 
