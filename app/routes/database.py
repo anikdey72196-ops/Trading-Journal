@@ -18,11 +18,6 @@ class Trades(db.Model):
     trade_reason = db.Column(db.String(255), nullable=True)
     profit_currency = db.Column(db.String(10), nullable=False, default='USD')
 
-class Remaining_trade(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    remaining_trade = db.Column(db.Integer, nullable=False)
-
 class DailyTarget(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
