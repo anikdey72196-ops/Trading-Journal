@@ -73,6 +73,6 @@ with app.app_context():
         print(f"DB URI used: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT SET')}")
 
 if __name__ == '__main__':
-    # port = int(os.environ.get("PORT", 5000))
-    # app.run(host="0.0.0.0", port=port)
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 5000))
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() in ("true", "1", "t")
+    app.run(host="0.0.0.0", port=port, debug=debug)
