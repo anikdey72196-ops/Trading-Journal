@@ -4,6 +4,7 @@ from form import AddTradeForm, DailyTargetForm
 from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
 import requests as http_requests
+import time
 from utils import pnl_to_usd
 
 
@@ -11,17 +12,30 @@ main_bp = Blueprint('main', __name__)
 
 # ------------------------- Currency Conversion -------------------------
 FALLBACK_INR_PER_USD = 84.0   # used only when the live API is unreachable
+_inr_per_usd_cache = None
+_inr_per_usd_cache_time = 0
+CACHE_TTL = 3600  # 1 hour
 
 def get_inr_per_usd():
-    """Fetch live INR-per-USD rate from a free API. Returns a float."""
+    """Fetch live INR-per-USD rate from a free API, with caching. Returns a float."""
+    global _inr_per_usd_cache, _inr_per_usd_cache_time
+    current_time = time.time()
+
+    if _inr_per_usd_cache is not None and (current_time - _inr_per_usd_cache_time) < CACHE_TTL:
+        return _inr_per_usd_cache
+
     try:
         resp = http_requests.get(
             'https://api.exchangerate-api.com/v4/latest/USD',
             timeout=3
         )
         data = resp.json()
-        return float(data['rates']['INR'])
+        _inr_per_usd_cache = float(data['rates']['INR'])
+        _inr_per_usd_cache_time = current_time
+        return _inr_per_usd_cache
     except Exception:
+        if _inr_per_usd_cache is not None:
+            return _inr_per_usd_cache
         return FALLBACK_INR_PER_USD
 
 # ------------------------- Index -------------------------
