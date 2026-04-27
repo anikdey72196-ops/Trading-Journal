@@ -21,7 +21,6 @@ class Login(FlaskForm):
 class AddTradeForm(FlaskForm):
     trade_instruments = StringField('Trade Instruments', validators=[DataRequired()], render_kw={"placeholder": "e.g. NIFTY, BANKNIFTY"})
     trade_lots = IntegerField('Trade Lots', validators=[DataRequired()], render_kw={"placeholder": "e.g. 1"})
-    trade_date = DateField('Trade Date', validators=[DataRequired()])
     trade_pnl = IntegerField('Trade PnL', validators=[DataRequired()], render_kw={"placeholder": "e.g. 500 or -200"})
     trade_reason = StringField('Trade Reason / Notes', render_kw={"placeholder": "e.g. respect the Support zone, Liquidity... (Optional)"})
     Profit_currency = SelectField('Profit Currency', choices=[('INR', 'INR'), ('USD', 'USD')], validators=[DataRequired()])

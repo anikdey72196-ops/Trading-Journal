@@ -198,11 +198,7 @@ def add_trade():
 
     form = AddTradeForm()
     if form.validate_on_submit():
-        trade_date_val = form.trade_date.data
-        if trade_date_val == date.today():
-            trade_datetime = datetime.now()
-        else:
-            trade_datetime = datetime.combine(trade_date_val, datetime.min.time())
+        trade_datetime = datetime.now()
 
         trade = Trades(
             user_id=session['user_id'],
@@ -241,7 +237,6 @@ def edit_trade(trade_id):
     if form.validate_on_submit():
         trade_to_edit.trade_instruments = form.trade_instruments.data
         trade_to_edit.trade_lots = form.trade_lots.data
-        trade_to_edit.trade_date = form.trade_date.data
         trade_to_edit.trade_pnl = form.trade_pnl.data
         trade_to_edit.trade_reason = form.trade_reason.data
         trade_to_edit.profit_currency = form.Profit_currency.data
