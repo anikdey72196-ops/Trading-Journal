@@ -50,7 +50,11 @@ if not database_url:
 print(f"Using database: {database_url.split('@')[-1] if '@' in database_url else database_url}")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'default_fallback_secret')
+
+secret_key = os.environ.get('SECRET_KEY')
+if not secret_key:
+    raise RuntimeError("SECRET_KEY environment variable is missing.")
+app.config['SECRET_KEY'] = secret_key
 
 # Tell Flask to trust Railway's reverse proxy (fixes HTTPS/session issues)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
