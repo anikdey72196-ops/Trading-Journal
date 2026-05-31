@@ -44,14 +44,11 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter_by(Email=form.Email.data).first()
         
-        if user:
-            # Check hashed password
-            if check_password_hash(user.Password, form.Password.data):
-                session['user_id'] = user.id
-                flash('Login successful!', 'success')
-                return redirect(url_for('main.home'))
-            else:
-                flash('Invalid email or password.', 'danger')
+        # Check if user exists and password is correct
+        if user and check_password_hash(user.Password, form.Password.data):
+            session['user_id'] = user.id
+            flash('Login successful!', 'success')
+            return redirect(url_for('main.home'))
         else:
             flash('Invalid email or password.', 'danger')
 
