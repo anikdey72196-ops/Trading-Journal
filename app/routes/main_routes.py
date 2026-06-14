@@ -97,18 +97,22 @@ def home():
     ).all()
 
     daily_history = []
+    trades_today = 0
     for i in range(7):
         d = today - timedelta(days=i)
         day_trades = [t for t in recent_trades if t.trade_date.date() == d]
         day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
+
+        vol = len(day_trades)
+        if i == 0:
+            trades_today = vol
+
         daily_history.append({
             'date': d,
             'pnl': day_pnl_usd,
-            'volume': len(day_trades)
+            'volume': vol
         })
     daily_history.reverse()
-
-    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
