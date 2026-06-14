@@ -164,13 +164,19 @@ def set_daily_target():
     yesterday = today - timedelta(days=1)
     yesterday_start = datetime.combine(yesterday, datetime.min.time())
     yesterday_end = datetime.combine(yesterday, datetime.max.time())
-    yesterday_trades = Trades.query.filter(
+    yesterday_stats = db.session.query(
+        func.sum(Trades.trade_pnl),
+        func.count(Trades.id)
+    ).filter(
         Trades.user_id == user.id,
         Trades.trade_date >= yesterday_start,
         Trades.trade_date <= yesterday_end
-    ).all()
+    ).first()
+
+    yesterday_pnl = yesterday_stats[0] or 0.0
+    yesterday_volume = yesterday_stats[1] or 0
     
-    return render_template('set_daily_target.html', form=form, user=user, yesterday_pnl=sum(t.trade_pnl for t in yesterday_trades), yesterday_volume=len(yesterday_trades))
+    return render_template('set_daily_target.html', form=form, user=user, yesterday_pnl=yesterday_pnl, yesterday_volume=yesterday_volume)
 
 # ------------------------- Add Trade -------------------------
 @main_bp.route('/add_trade', methods=['GET', 'POST'])
