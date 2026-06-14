@@ -1,3 +1,4 @@
+from app.routes import main_routes
 import pytest
 from unittest.mock import patch, MagicMock
 from app.routes.main_routes import get_inr_per_usd, FALLBACK_INR_PER_USD
@@ -18,6 +19,8 @@ def test_get_inr_per_usd_success(mock_get):
 
 @patch('app.routes.main_routes.http_requests.get')
 def test_get_inr_per_usd_exception(mock_get):
+    main_routes._inr_per_usd_cache = None
+    main_routes._inr_per_usd_cache_time = 0
     # Setup mock to raise an exception
     mock_get.side_effect = Exception("API Error")
 
@@ -30,6 +33,8 @@ def test_get_inr_per_usd_exception(mock_get):
 
 @patch('app.routes.main_routes.http_requests.get')
 def test_get_inr_per_usd_invalid_json(mock_get):
+    main_routes._inr_per_usd_cache = None
+    main_routes._inr_per_usd_cache_time = 0
     # Setup mock with invalid JSON structure missing 'rates'
     mock_response = MagicMock()
     mock_response.json.return_value = {'unexpected_key': 'value'}

@@ -6,6 +6,7 @@ from datetime import date, timedelta, datetime
 import requests as http_requests
 import time
 from utils import pnl_to_usd
+from collections import defaultdict
 
 
 main_bp = Blueprint('main', __name__)
@@ -96,10 +97,20 @@ def home():
         Trades.trade_date >= seven_days_ago_start
     ).all()
 
+    trades_by_date = defaultdict(list)
+    for t in recent_trades:
+        t_date = t.trade_date
+        # Normalize to date object to handle string vs datetime depending on DB
+        if isinstance(t_date, str):
+            t_date = datetime.strptime(t_date[:10], '%Y-%m-%d').date()
+        elif isinstance(t_date, datetime):
+            t_date = t_date.date()
+        trades_by_date[t_date].append(t)
+
     daily_history = []
     for i in range(7):
         d = today - timedelta(days=i)
-        day_trades = [t for t in recent_trades if t.trade_date.date() == d]
+        day_trades = trades_by_date[d]
         day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
         daily_history.append({
             'date': d,
@@ -108,7 +119,7 @@ def home():
         })
     daily_history.reverse()
 
-    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
+    trades_today = len(trades_by_date[today])
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
