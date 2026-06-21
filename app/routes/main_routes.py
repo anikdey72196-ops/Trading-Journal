@@ -1,32 +1,42 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
 from database import db, User, Trades, DailyTarget
 from form import AddTradeForm, DailyTargetForm
+from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
 import requests as http_requests
+import time
+from utils import pnl_to_usd
 
 
 main_bp = Blueprint('main', __name__)
 
 # ------------------------- Currency Conversion -------------------------
 FALLBACK_INR_PER_USD = 84.0   # used only when the live API is unreachable
+_inr_per_usd_cache = None
+_inr_per_usd_cache_time = 0
+CACHE_TTL = 3600  # 1 hour
 
 def get_inr_per_usd():
-    """Fetch live INR-per-USD rate from a free API. Returns a float."""
+    """Fetch live INR-per-USD rate from a free API, with caching. Returns a float."""
+    global _inr_per_usd_cache, _inr_per_usd_cache_time
+    current_time = time.time()
+
+    if _inr_per_usd_cache is not None and (current_time - _inr_per_usd_cache_time) < CACHE_TTL:
+        return _inr_per_usd_cache
+
     try:
         resp = http_requests.get(
             'https://api.exchangerate-api.com/v4/latest/USD',
             timeout=3
         )
         data = resp.json()
-        return float(data['rates']['INR'])
+        _inr_per_usd_cache = float(data['rates']['INR'])
+        _inr_per_usd_cache_time = current_time
+        return _inr_per_usd_cache
     except Exception:
+        if _inr_per_usd_cache is not None:
+            return _inr_per_usd_cache
         return FALLBACK_INR_PER_USD
-
-def pnl_to_usd(pnl, currency, inr_per_usd):
-    """Convert a PnL value to USD. If already USD, return as-is."""
-    if currency == 'INR':
-        return pnl / inr_per_usd
-    return float(pnl)
 
 # ------------------------- Index -------------------------
 @main_bp.route('/')
@@ -55,16 +65,41 @@ def home():
     if not today_target:
         return redirect(url_for('main.set_daily_target'))
 
-    user_trades = Trades.query.filter_by(user_id=user.id).all()
-
     # ---- Live INR→USD rate ----
     inr_per_usd = get_inr_per_usd()
 
+    # ---- Total Stats (across all history) ----
+    # Perform calculations in DB to avoid fetching all rows
+    total_stats = db.session.query(
+        func.sum(
+            case(
+                (Trades.profit_currency == 'INR', Trades.trade_pnl / inr_per_usd),
+                else_=func.cast(Trades.trade_pnl, db.Float)
+            )
+        ),
+        func.count(Trades.id),
+        func.sum(case((Trades.trade_pnl > 0, 1), else_=0)), # Wins
+        func.sum(case((Trades.trade_pnl < 0, 1), else_=0))  # Losses
+    ).filter(Trades.user_id == user.id).first()
+
+    total_pnl_usd = total_stats[0] if total_stats and total_stats[0] is not None else 0.0
+    total_trades_count = total_stats[1] if total_stats and total_stats[1] is not None else 0
+    total_wins = total_stats[2] if total_stats and total_stats[2] is not None else 0
+    total_losses = total_stats[3] if total_stats and total_stats[3] is not None else 0
+
     # ---- 7-day history (PnL converted to USD for charting) ----
+    seven_days_ago = today - timedelta(days=6)
+    seven_days_ago_start = datetime.combine(seven_days_ago, datetime.min.time())
+
+    recent_trades = Trades.query.filter(
+        Trades.user_id == user.id,
+        Trades.trade_date >= seven_days_ago_start
+    ).all()
+
     daily_history = []
     for i in range(7):
         d = today - timedelta(days=i)
-        day_trades = [t for t in user_trades if t.trade_date.date() == d]
+        day_trades = [t for t in recent_trades if t.trade_date.date() == d]
         day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
         daily_history.append({
             'date': d,
@@ -73,10 +108,7 @@ def home():
         })
     daily_history.reverse()
 
-    # ---- Total PnL in USD (across all history) ----
-    total_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in user_trades)
-
-    trades_today = len([t for t in user_trades if t.trade_date.date() == today])
+    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
@@ -87,13 +119,16 @@ def home():
     return render_template(
         'home.html',
         user=user,
-        trades=user_trades,
+        trades=recent_trades,
         log_trades=log_trades,
         remaining_trades=remaining_trades,
         trades_today=trades_today,
         daily_history=daily_history,
         today_target=today_target,
         total_pnl_usd=total_pnl_usd,
+        total_trades_count=total_trades_count,
+        total_wins=total_wins,
+        total_losses=total_losses,
         inr_per_usd=inr_per_usd
     )
 
@@ -127,7 +162,13 @@ def set_daily_target():
             print(f"Database error setting daily target: {e}")
 
     yesterday = today - timedelta(days=1)
-    yesterday_trades = [t for t in Trades.query.filter_by(user_id=user.id).all() if t.trade_date.date() == yesterday]
+    yesterday_start = datetime.combine(yesterday, datetime.min.time())
+    yesterday_end = datetime.combine(yesterday, datetime.max.time())
+    yesterday_trades = Trades.query.filter(
+        Trades.user_id == user.id,
+        Trades.trade_date >= yesterday_start,
+        Trades.trade_date <= yesterday_end
+    ).all()
     
     return render_template('set_daily_target.html', form=form, user=user, yesterday_pnl=sum(t.trade_pnl for t in yesterday_trades), yesterday_volume=len(yesterday_trades))
 
@@ -138,9 +179,40 @@ def add_trade():
         flash('Please log in to access this page.', 'warning')
         return redirect(url_for('auth.login'))
 
+    user_id = session['user_id']
+    today = date.today()
+
+    today_target = DailyTarget.query.filter_by(user_id=user_id, date=today).first()
+    if not today_target:
+        flash('Please set your daily target first.', 'warning')
+        return redirect(url_for('main.set_daily_target'))
+
+    trades_today_count = Trades.query.filter(
+        Trades.user_id == user_id,
+        db.func.date(Trades.trade_date) == today
+    ).count()
+
+    if trades_today_count >= today_target.max_trades:
+        flash('Daily trade limit reached! You cannot add more trades today.', 'danger')
+        return redirect(url_for('main.home'))
+
     form = AddTradeForm()
     if form.validate_on_submit():
-        trade = Trades(user_id=session['user_id'], trade_instruments=form.trade_instruments.data, trade_lots=form.trade_lots.data, trade_date=form.trade_date.data, trade_pnl=form.trade_pnl.data, trade_reason=form.trade_reason.data, profit_currency=form.Profit_currency.data)
+        trade_date_val = form.trade_date.data
+        if trade_date_val == date.today():
+            trade_datetime = datetime.now()
+        else:
+            trade_datetime = datetime.combine(trade_date_val, datetime.min.time())
+
+        trade = Trades(
+            user_id=session['user_id'],
+            trade_instruments=form.trade_instruments.data,
+            trade_lots=form.trade_lots.data,
+            trade_date=trade_datetime,
+            trade_pnl=form.trade_pnl.data,
+            trade_reason=form.trade_reason.data,
+            profit_currency=form.Profit_currency.data
+        )
         try:
             db.session.add(trade)
             db.session.commit()

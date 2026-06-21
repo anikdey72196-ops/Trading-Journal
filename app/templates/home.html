@@ -2,24 +2,8 @@
 
 {% block content %}
 
-<!-- Calculate Win Rate and PnL metrics purely in Jinja for the visual array -->
-{% set ns = namespace(total_pnl=0, wins=0, losses=0) %}
-{% for trade in trades %}
-    {% if trade.profit_currency == 'INR' %}
-        {% set pnl_usd = trade.trade_pnl / inr_per_usd %}
-    {% else %}
-        {% set pnl_usd = trade.trade_pnl %}
-    {% endif %}
-    {% set ns.total_pnl = ns.total_pnl + pnl_usd %}
-    {% if trade.trade_pnl > 0 %}
-        {% set ns.wins = ns.wins + 1 %}
-    {% elif trade.trade_pnl < 0 %}
-        {% set ns.losses = ns.losses + 1 %}
-    {% endif %}
-{% endfor %}
-
-{% set total_wl = ns.wins + ns.losses %}
-{% set win_rate = (ns.wins / total_wl * 100) | round(1) if total_wl > 0 else 0 %}
+{% set total_wl = total_wins + total_losses %}
+{% set win_rate = (total_wins / total_wl * 100) | round(1) if total_wl > 0 else 0 %}
 
 <header class="mb-8">
     <h1 class="font-headline-xl text-3xl md:text-4xl lg:text-[2rem] text-slate-50 font-bold tracking-tight mb-2">Trader Performance</h1>
@@ -54,9 +38,9 @@
         </div>
         <h2 class="font-headline-xl text-3xl text-secondary font-bold mb-2">{{ win_rate }}%</h2>
         <div class="text-sm font-medium">
-            <span class="text-emerald-400">{{ ns.wins }}W</span> 
+            <span class="text-emerald-400">{{ total_wins }}W</span>
             <span class="text-slate-600 mx-1">/</span> 
-            <span class="text-rose-400">{{ ns.losses }}L</span>
+            <span class="text-rose-400">{{ total_losses }}L</span>
         </div>
     </div>
 
@@ -69,7 +53,7 @@
         <h2 class="font-headline-xl text-3xl text-slate-100 font-bold mb-2">{{ trades_today | default(0) }}</h2>
         <div class="text-sm text-slate-400">
             <span class="text-emerald-400"><i class="fa-solid fa-arrow-trend-up"></i></span>
-            {{ trades | length }} Lifetime Executions
+            {{ total_trades_count | default(0) }} Lifetime Executions
         </div>
     </div>
 
