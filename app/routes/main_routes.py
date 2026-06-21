@@ -11,7 +11,7 @@ from utils import pnl_to_usd
 main_bp = Blueprint('main', __name__)
 
 # ------------------------- Currency Conversion -------------------------
-FALLBACK_INR_PER_USD = 84.0   # used only when the live API is unreachable
+FALLBACK_INR_PER_USD = 83.5   # used only when the live API is unreachable
 _inr_per_usd_cache = None
 _inr_per_usd_cache_time = 0
 CACHE_TTL = 3600  # 1 hour
