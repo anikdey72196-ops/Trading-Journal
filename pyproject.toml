@@ -1,0 +1,2 @@
+[tool.vercel]
+entrypoint = "app.routes.app:app"
