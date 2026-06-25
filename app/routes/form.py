@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, IntegerField, EmailField, DateField, SelectMultipleField, SelectField, widgets
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Length, Regexp
 
 class MultiCheckboxField(SelectMultipleField):
     widget = widgets.ListWidget(prefix_label=False)
@@ -9,7 +9,11 @@ class MultiCheckboxField(SelectMultipleField):
 class Register(FlaskForm):
     Name = StringField('Name', validators=[DataRequired()], render_kw={"placeholder": "Enter your name"})
     Email = EmailField('Email', validators=[DataRequired()], render_kw={"placeholder": "Enter your email"})
-    Password = PasswordField('Password', validators=[DataRequired()], render_kw={"placeholder": "Enter your password"})
+    Password = PasswordField('Password', validators=[
+        DataRequired(),
+        Length(min=8, message="Password must be at least 8 characters long."),
+        Regexp(r'^(?=.*[A-Za-z])(?=.*\d).+$', message="Password must contain at least one letter and one number.")
+    ], render_kw={"placeholder": "Enter your password"})
     Avg_Daily_max_trade = IntegerField('Avg Daily Max Trades', validators=[DataRequired()], render_kw={"placeholder": "Enter your average daily max trades"})
     submit = SubmitField('Register')
 
