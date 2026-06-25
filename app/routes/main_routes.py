@@ -159,7 +159,7 @@ def set_daily_target():
         except Exception as e:
             db.session.rollback()
             flash('Failed to set daily target. Try again.', 'danger')
-            print(f"Database error setting daily target: {e}")
+            print("Database error setting daily target.")
 
     yesterday = today - timedelta(days=1)
     yesterday_start = datetime.combine(yesterday, datetime.min.time())
@@ -221,7 +221,7 @@ def add_trade():
         except Exception as e:
             db.session.rollback()
             flash('Failed to add trade.', 'danger')
-            print(f"Database error during trade addition: {e}")
+            print("Database error during trade addition.")
 
     return render_template('add_trade.html', form=form)
 
@@ -253,7 +253,7 @@ def edit_trade(trade_id):
         except Exception as e:
             db.session.rollback()
             flash('Failed to update trade.', 'danger')
-            print(f"Database error during trade update: {e}")
+            print("Database error during trade update.")
 
     return render_template('edit_trade.html', form=form, trade=trade_to_edit)
 
@@ -274,7 +274,7 @@ def delete_trade(trade_id):
         flash("Trade deleted!", "success")
     except Exception as e:
         flash("There was a problem to delete that trade.", "error")
-        print(f"Database error during trade deletion: {e}")
+        print("Database error during trade deletion.")
         
     return redirect(url_for('main.home'))
 
