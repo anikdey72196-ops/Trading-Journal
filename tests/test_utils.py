@@ -29,5 +29,12 @@ class TestUtils(unittest.TestCase):
         self.assertAlmostEqual(pnl_to_usd(100.0, 'INR', 80.0), 1.25)
         self.assertEqual(pnl_to_usd(12.34, 'USD', 84.0), 12.34)
 
+    def test_pnl_to_usd_invalid_currency(self):
+        # Case: Invalid or unexpected currency formats
+        self.assertEqual(pnl_to_usd(50, None, 84.0), 50.0)
+        self.assertEqual(pnl_to_usd(50, '', 84.0), 50.0)
+        self.assertEqual(pnl_to_usd(50, 'INVALID', 84.0), 50.0)
+        self.assertEqual(pnl_to_usd(50, 123, 84.0), 50.0)
+
 if __name__ == '__main__':
     unittest.main()
