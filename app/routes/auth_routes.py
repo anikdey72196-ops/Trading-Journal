@@ -15,7 +15,7 @@ def register():
 
     form = Register()
     if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
+        hashed_password = generate_password_hash(form.Password.data, method='scrypt')
         user = User(
             Name=form.Name.data,
             Email=form.Email.data,
