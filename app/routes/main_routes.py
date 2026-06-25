@@ -3,6 +3,7 @@ from database import db, User, Trades, DailyTarget
 from form import AddTradeForm, DailyTargetForm
 from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
+from collections import defaultdict
 import requests as http_requests
 import time
 from utils import pnl_to_usd
@@ -96,10 +97,14 @@ def home():
         Trades.trade_date >= seven_days_ago_start
     ).all()
 
+    trades_by_date = defaultdict(list)
+    for t in recent_trades:
+        trades_by_date[t.trade_date.date()].append(t)
+
     daily_history = []
     for i in range(7):
         d = today - timedelta(days=i)
-        day_trades = [t for t in recent_trades if t.trade_date.date() == d]
+        day_trades = trades_by_date[d]
         day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
         daily_history.append({
             'date': d,
@@ -108,7 +113,7 @@ def home():
         })
     daily_history.reverse()
 
-    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
+    trades_today = len(trades_by_date[today])
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
