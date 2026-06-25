@@ -273,14 +273,6 @@
             </div>
 
             <div class="form-group">
-                {{ form.trade_date.label }}
-                {{ form.trade_date() }}
-                {% if form.trade_date.errors %}
-                    <div class="field-errors">{{ form.trade_date.errors[0] }}</div>
-                {% endif %}
-            </div>
-
-            <div class="form-group">
                 {{ form.Rules.label }}
                 <div class="rules-container">
                     {% for subfield in form.Rules %}
