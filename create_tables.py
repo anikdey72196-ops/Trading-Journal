@@ -18,6 +18,8 @@ database_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
 if database_url:
     if database_url.startswith('mysql://'):
         database_url = database_url.replace('mysql://', 'mysql+pymysql://', 1)
+    elif database_url.startswith('postgres://'):
+        database_url = database_url.replace('postgres://', 'postgresql://', 1)
 else:
     mysql_host = os.environ.get('MYSQL_HOST', '').strip()
     mysql_port = os.environ.get('MYSQL_PORT', '3306').strip()
