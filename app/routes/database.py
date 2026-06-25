@@ -24,11 +24,6 @@ class DailyTarget(db.Model):
     date = db.Column(db.Date, nullable=False)
     max_trades = db.Column(db.Integer, nullable=False)
 
-class Description(db.Model):
-    id=db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    description = db.Column(db.String(80), nullable=False)
-
 class Profit_currency(db.Model):
     id=db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
