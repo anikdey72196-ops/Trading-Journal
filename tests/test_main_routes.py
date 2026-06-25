@@ -1,6 +1,12 @@
 import pytest
 from unittest.mock import patch, MagicMock
+import app.routes.main_routes
 from app.routes.main_routes import get_inr_per_usd, FALLBACK_INR_PER_USD
+
+@pytest.fixture(autouse=True)
+def reset_inr_cache():
+    app.routes.main_routes._inr_per_usd_cache = None
+    app.routes.main_routes._inr_per_usd_cache_time = 0
 
 @patch('app.routes.main_routes.http_requests.get')
 def test_get_inr_per_usd_success(mock_get):
