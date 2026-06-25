@@ -5,6 +5,7 @@ This runs BEFORE gunicorn starts, with all Railway env vars already available.
 """
 import sys
 import os
+import secrets
 
 # Make sure we can import from app/routes/
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app', 'routes'))
@@ -38,7 +39,7 @@ print(f"Connecting to: {database_url.split('@')[-1]}")
 # Minimal Flask app just for table creation
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'temp-secret')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 db.init_app(app)
 
 with app.app_context():
