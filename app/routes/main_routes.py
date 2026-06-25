@@ -108,7 +108,7 @@ def home():
         })
     daily_history.reverse()
 
-    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
+    trades_today = sum(1 for t in recent_trades if t.trade_date.date() == today)
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
