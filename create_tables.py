@@ -10,7 +10,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'app', 'routes'))
 
 from flask import Flask
-from database import db
+from app.routes.database import db
 
 # Build the DB URL from Railway env vars
 database_url = os.environ.get('DATABASE_URL') or os.environ.get('MYSQL_URL')
