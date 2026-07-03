@@ -1,11 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from database import db, User, Trades, DailyTarget
-from form import AddTradeForm, DailyTargetForm
+from app.routes.database import db, User, Trades, DailyTarget
+from app.routes.form import AddTradeForm, DailyTargetForm
 from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
 import requests as http_requests
 import time
-from utils import pnl_to_usd
+from app.routes.utils import pnl_to_usd
 
 
 main_bp = Blueprint('main', __name__)

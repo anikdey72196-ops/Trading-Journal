@@ -2,14 +2,14 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
-from database import db
+from app.routes.database import db
 
 import os
 from dotenv import load_dotenv
 
 # Import our new Blueprints
-from auth_routes import auth_bp
-from main_routes import main_bp
+from app.routes.auth_routes import auth_bp
+from app.routes.main_routes import main_bp
 
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 root_dir = os.path.abspath(os.path.join(base_dir, '..'))
@@ -64,7 +64,7 @@ app.register_blueprint(main_bp)
 
 @app.context_processor
 def inject_global_vars():
-    from database import DailyTarget, Trades
+    from app.routes.database import DailyTarget, Trades
     from flask import session
     from datetime import date
     if 'user_id' in session:
