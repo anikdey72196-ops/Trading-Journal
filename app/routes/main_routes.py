@@ -3,6 +3,7 @@ from database import db, User, Trades, DailyTarget
 from form import AddTradeForm, DailyTargetForm
 from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
+from collections import defaultdict
 import requests as http_requests
 import time
 from utils import pnl_to_usd
@@ -96,19 +97,31 @@ def home():
         Trades.trade_date >= seven_days_ago_start
     ).all()
 
+    daily_stats = defaultdict(lambda: {'pnl': 0.0, 'volume': 0})
+
+    for t in recent_trades:
+        d_val = t.trade_date
+        if isinstance(d_val, str):
+            d = datetime.strptime(d_val.split(' ')[0], '%Y-%m-%d').date()
+        elif isinstance(d_val, datetime):
+            d = d_val.date()
+        else:
+            d = d_val
+
+        daily_stats[d]['pnl'] += pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd)
+        daily_stats[d]['volume'] += 1
+
     daily_history = []
     for i in range(7):
         d = today - timedelta(days=i)
-        day_trades = [t for t in recent_trades if t.trade_date.date() == d]
-        day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
         daily_history.append({
             'date': d,
-            'pnl': day_pnl_usd,
-            'volume': len(day_trades)
+            'pnl': daily_stats[d]['pnl'],
+            'volume': daily_stats[d]['volume']
         })
     daily_history.reverse()
 
-    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
+    trades_today = daily_stats[today]['volume']
     remaining_trades = max(0, today_target.max_trades - trades_today)
     
     page = request.args.get('page', 1, type=int)
