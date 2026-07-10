@@ -5,7 +5,7 @@ from sqlalchemy import func, case
 from datetime import date, timedelta, datetime
 import requests as http_requests
 import time
-from utils import pnl_to_usd
+from utils import pnl_to_usd, login_required
 
 
 main_bp = Blueprint('main', __name__)
@@ -48,10 +48,8 @@ def index():
 
 # ------------------------- Home -------------------------
 @main_bp.route('/home')
+@login_required
 def home():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
 
     user = db.session.get(User, session['user_id'])
     if not user:
@@ -134,10 +132,8 @@ def home():
 
 # ------------------------- Set Daily Target -------------------------
 @main_bp.route('/set_daily_target', methods=['GET', 'POST'])
+@login_required
 def set_daily_target():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
 
     user = db.session.get(User, session['user_id'])
     if not user:
@@ -174,10 +170,8 @@ def set_daily_target():
 
 # ------------------------- Add Trade -------------------------
 @main_bp.route('/add_trade', methods=['GET', 'POST'])
+@login_required
 def add_trade():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
 
     user_id = session['user_id']
     today = date.today()
@@ -227,10 +221,8 @@ def add_trade():
 
 # ------------------------- Edit Trade -------------------------
 @main_bp.route('/edit_trade/<int:trade_id>', methods=['GET', 'POST'])
+@login_required
 def edit_trade(trade_id):
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
 
     trade_to_edit = Trades.query.get_or_404(trade_id)
     if trade_to_edit.user_id != session['user_id']:
@@ -259,9 +251,8 @@ def edit_trade(trade_id):
 
 # ------------------------- Delete Trade -------------------------
 @main_bp.route('/delete_trade/<int:trade_id>', methods=['POST'])
+@login_required
 def delete_trade(trade_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
 
     trade_to_delete = Trades.query.get_or_404(trade_id)
     if trade_to_delete.user_id != session['user_id']:
@@ -282,10 +273,8 @@ def delete_trade(trade_id):
 # -------------------------- performance log -------------------------
 
 @main_bp.route("/performance_log")
+@login_required
 def performance_log():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
         
     user = db.session.get(User, session['user_id'])
     if not user:
