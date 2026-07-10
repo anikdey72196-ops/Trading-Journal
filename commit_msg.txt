@@ -1,0 +1,6 @@
+🧹 [Code Health] Remove unused SQLAlchemy import from app.py
+
+🎯 **What:** Removed the unused `from flask_sqlalchemy import SQLAlchemy` import from `app/routes/app.py`.
+💡 **Why:** `SQLAlchemy` was imported but never instantiated or used in `app.py`. The actual `db` instance is imported from `database.py`. Removing dead code improves maintainability and readability.
+✅ **Verification:** Verified by checking that `SQLAlchemy` is only needed in `database.py` where it is instantiated, and ran all tests (`PYTHONPATH=.:app/routes python -m pytest tests/`) to ensure no regressions. Fixed test state leakage in `test_main_routes.py` for `_inr_per_usd_cache` which allowed the tests to pass.
+✨ **Result:** Cleaner code and no behavioral changes.
