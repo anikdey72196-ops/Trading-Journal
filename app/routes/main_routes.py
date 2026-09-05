@@ -1,12 +1,13 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
-from database import db, User, Trades, DailyTarget
-from form import AddTradeForm, DailyTargetForm
-from sqlalchemy import func, case
+from collections import defaultdict
 from datetime import date, timedelta, datetime
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from sqlalchemy import func, case
 import requests as http_requests
 import time
-from utils import pnl_to_usd
 
+from database import db, User, Trades, DailyTarget
+from form import AddTradeForm, DailyTargetForm
+from utils import pnl_to_usd, login_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -48,11 +49,8 @@ def index():
 
 # ------------------------- Home -------------------------
 @main_bp.route('/home')
+@login_required
 def home():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
-
     user = db.session.get(User, session['user_id'])
     if not user:
         session.pop('user_id', None)
@@ -60,26 +58,23 @@ def home():
         return redirect(url_for('auth.login'))
 
     today = date.today()
+    inr_per_usd = get_inr_per_usd()
+
     today_target = DailyTarget.query.filter_by(user_id=user.id, date=today).first()
-    
     if not today_target:
         return redirect(url_for('main.set_daily_target'))
 
-    # ---- Live INR→USD rate ----
-    inr_per_usd = get_inr_per_usd()
-
-    # ---- Total Stats (across all history) ----
-    # Perform calculations in DB to avoid fetching all rows
+    # SQL-level aggregation for total metrics
     total_stats = db.session.query(
         func.sum(
             case(
                 (Trades.profit_currency == 'INR', Trades.trade_pnl / inr_per_usd),
-                else_=func.cast(Trades.trade_pnl, db.Float)
+                else_=Trades.trade_pnl
             )
-        ),
-        func.count(Trades.id),
-        func.sum(case((Trades.trade_pnl > 0, 1), else_=0)), # Wins
-        func.sum(case((Trades.trade_pnl < 0, 1), else_=0))  # Losses
+        ).label('total_pnl'),
+        func.count(Trades.id).label('total_trades'),
+        func.sum(case((Trades.trade_pnl > 0, 1), else_=0)).label('total_wins'),
+        func.sum(case((Trades.trade_pnl < 0, 1), else_=0)).label('total_losses')
     ).filter(Trades.user_id == user.id).first()
 
     total_pnl_usd = total_stats[0] if total_stats and total_stats[0] is not None else 0.0
@@ -87,7 +82,7 @@ def home():
     total_wins = total_stats[2] if total_stats and total_stats[2] is not None else 0
     total_losses = total_stats[3] if total_stats and total_stats[3] is not None else 0
 
-    # ---- 7-day history (PnL converted to USD for charting) ----
+    # 7-day history (PnL converted to USD for charting)
     seven_days_ago = today - timedelta(days=6)
     seven_days_ago_start = datetime.combine(seven_days_ago, datetime.min.time())
 
@@ -96,10 +91,15 @@ def home():
         Trades.trade_date >= seven_days_ago_start
     ).all()
 
+    trades_by_date = defaultdict(list)
+    for t in recent_trades:
+        t_date = t.trade_date.date() if isinstance(t.trade_date, datetime) else t.trade_date
+        trades_by_date[t_date].append(t)
+
     daily_history = []
     for i in range(7):
         d = today - timedelta(days=i)
-        day_trades = [t for t in recent_trades if t.trade_date.date() == d]
+        day_trades = trades_by_date.get(d, [])
         day_pnl_usd = sum(pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd) for t in day_trades)
         daily_history.append({
             'date': d,
@@ -108,18 +108,21 @@ def home():
         })
     daily_history.reverse()
 
-    trades_today = len([t for t in recent_trades if t.trade_date.date() == today])
+    trades_today = len(trades_by_date.get(today, []))
     remaining_trades = max(0, today_target.max_trades - trades_today)
-    
+
     page = request.args.get('page', 1, type=int)
     today_start = datetime.combine(today, datetime.min.time())
     today_end = datetime.combine(today, datetime.max.time())
-    log_trades = Trades.query.filter(Trades.user_id == user.id, Trades.trade_date >= today_start, Trades.trade_date <= today_end).order_by(Trades.trade_date.desc(), Trades.id.desc()).paginate(page=page, per_page=10, error_out=False)
+    log_trades = Trades.query.filter(
+        Trades.user_id == user.id,
+        Trades.trade_date >= today_start,
+        Trades.trade_date <= today_end
+    ).order_by(Trades.trade_date.desc(), Trades.id.desc()).paginate(page=page, per_page=10, error_out=False)
 
     return render_template(
         'home.html',
         user=user,
-        trades=recent_trades,
         log_trades=log_trades,
         remaining_trades=remaining_trades,
         trades_today=trades_today,
@@ -134,11 +137,8 @@ def home():
 
 # ------------------------- Set Daily Target -------------------------
 @main_bp.route('/set_daily_target', methods=['GET', 'POST'])
+@login_required
 def set_daily_target():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
-
     user = db.session.get(User, session['user_id'])
     if not user:
         session.pop('user_id', None)
@@ -156,10 +156,10 @@ def set_daily_target():
             db.session.commit()
             flash('Target set for today!', 'success')
             return redirect(url_for('main.home'))
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Failed to set daily target. Try again.', 'danger')
-            print(f"Database error setting daily target: {e}")
+            print("Database error setting daily target.")
 
     yesterday = today - timedelta(days=1)
     yesterday_start = datetime.combine(yesterday, datetime.min.time())
@@ -169,16 +169,22 @@ def set_daily_target():
         Trades.trade_date >= yesterday_start,
         Trades.trade_date <= yesterday_end
     ).all()
-    
-    return render_template('set_daily_target.html', form=form, user=user, yesterday_pnl=sum(t.trade_pnl for t in yesterday_trades), yesterday_volume=len(yesterday_trades))
+
+    yesterday_pnl = sum(t.trade_pnl for t in yesterday_trades) if yesterday_trades else 0
+    yesterday_volume = len(yesterday_trades)
+
+    return render_template(
+        'set_daily_target.html',
+        form=form,
+        user=user,
+        yesterday_pnl=yesterday_pnl,
+        yesterday_volume=yesterday_volume
+    )
 
 # ------------------------- Add Trade -------------------------
 @main_bp.route('/add_trade', methods=['GET', 'POST'])
+@login_required
 def add_trade():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
-
     user_id = session['user_id']
     today = date.today()
 
@@ -205,7 +211,7 @@ def add_trade():
             trade_datetime = datetime.combine(trade_date_val, datetime.min.time())
 
         trade = Trades(
-            user_id=session['user_id'],
+            user_id=user_id,
             trade_instruments=form.trade_instruments.data,
             trade_lots=form.trade_lots.data,
             trade_date=trade_datetime,
@@ -218,119 +224,116 @@ def add_trade():
             db.session.commit()
             flash('Trade added successfully!', 'success')
             return redirect(url_for('main.home'))
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Failed to add trade.', 'danger')
-            print(f"Database error during trade addition: {e}")
+            print("Database error during trade addition.")
 
     return render_template('add_trade.html', form=form)
 
 # ------------------------- Edit Trade -------------------------
 @main_bp.route('/edit_trade/<int:trade_id>', methods=['GET', 'POST'])
+@login_required
 def edit_trade(trade_id):
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
-
     trade_to_edit = Trades.query.get_or_404(trade_id)
     if trade_to_edit.user_id != session['user_id']:
         flash("Unauthorized", "danger")
         return redirect(url_for('main.home'))
-    
+
     form = AddTradeForm(obj=trade_to_edit)
     if form.validate_on_submit():
         trade_to_edit.trade_instruments = form.trade_instruments.data
         trade_to_edit.trade_lots = form.trade_lots.data
-        trade_to_edit.trade_date = form.trade_date.data
+        trade_date_val = form.trade_date.data
+        if isinstance(trade_date_val, date) and not isinstance(trade_date_val, datetime):
+            trade_to_edit.trade_date = datetime.combine(trade_date_val, datetime.min.time())
+        else:
+            trade_to_edit.trade_date = trade_date_val
+
         trade_to_edit.trade_pnl = form.trade_pnl.data
         trade_to_edit.trade_reason = form.trade_reason.data
         trade_to_edit.profit_currency = form.Profit_currency.data
-        
+
         try:
             db.session.commit()
             flash('Trade updated!', 'success')
             return redirect(url_for('main.home'))
-        except Exception as e:
+        except Exception:
             db.session.rollback()
             flash('Failed to update trade.', 'danger')
-            print(f"Database error during trade update: {e}")
+            print("Database error during trade update.")
 
     return render_template('edit_trade.html', form=form, trade=trade_to_edit)
 
 # ------------------------- Delete Trade -------------------------
 @main_bp.route('/delete_trade/<int:trade_id>', methods=['POST'])
+@login_required
 def delete_trade(trade_id):
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
     trade_to_delete = Trades.query.get_or_404(trade_id)
     if trade_to_delete.user_id != session['user_id']:
         flash("Unauthorized", "danger")
         return redirect(url_for('main.home'))
-    
+
     try:
         db.session.delete(trade_to_delete)
         db.session.commit()
         flash("Trade deleted!", "success")
-    except Exception as e:
+    except Exception:
+        db.session.rollback()
         flash("There was a problem to delete that trade.", "error")
-        print(f"Database error during trade deletion: {e}")
-        
+        print("Database error during trade deletion.")
+
     return redirect(url_for('main.home'))
 
-
-# -------------------------- performance log -------------------------
-
+# -------------------------- Performance Log -------------------------
 @main_bp.route("/performance_log")
+@login_required
 def performance_log():
-    if 'user_id' not in session:
-        flash('Please log in to access this page.', 'warning')
-        return redirect(url_for('auth.login'))
-        
     user = db.session.get(User, session['user_id'])
     if not user:
         session.pop('user_id', None)
         return redirect(url_for('auth.login'))
-        
+
     user_trades = Trades.query.filter_by(user_id=user.id).order_by(Trades.trade_date.asc()).all()
     inr_per_usd = get_inr_per_usd()
-    
+
     dates = []
     pnls_usd = []
     cumulative_pnl_usd = 0
     cumulative_pnls_usd = []
     wins = 0
     losses = 0
-    setup_pnl = {}
-    
+    setup_pnl = defaultdict(float)
+
     for t in user_trades:
         dates.append(t.trade_date.strftime('%b %d'))
         p_usd = pnl_to_usd(t.trade_pnl, getattr(t, 'profit_currency', 'USD'), inr_per_usd)
         pnls_usd.append(round(p_usd, 2))
         cumulative_pnl_usd += p_usd
         cumulative_pnls_usd.append(round(cumulative_pnl_usd, 2))
-        
+
         if p_usd > 0:
             wins += 1
         elif p_usd < 0:
             losses += 1
-            
+
         setup = t.trade_instruments.strip() if t.trade_instruments and t.trade_instruments.strip() else "Unknown"
         if len(setup) > 15:
             setup = setup[:15] + "..."
-            
-        setup_pnl[setup] = setup_pnl.get(setup, 0) + p_usd
-        
+
+        setup_pnl[setup] += p_usd
+
     setup_labels = list(setup_pnl.keys())
     setup_data = [round(v, 2) for v in setup_pnl.values()]
-        
-    return render_template('performance_log.html', 
-                           user=user, 
-                           dates=dates, 
-                           pnls=pnls_usd, 
-                           cumulative_pnls=cumulative_pnls_usd,
-                           wins=wins,
-                           losses=losses,
-                           setup_labels=setup_labels,
-                           setup_data=setup_data)
-    
+
+    return render_template(
+        'performance_log.html',
+        user=user,
+        dates=dates,
+        pnls=pnls_usd,
+        cumulative_pnls=cumulative_pnls_usd,
+        wins=wins,
+        losses=losses,
+        setup_labels=setup_labels,
+        setup_data=setup_data
+    )
