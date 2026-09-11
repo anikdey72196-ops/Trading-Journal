@@ -1,7 +1,7 @@
 import secrets
-from flask import Flask
+from flask import Flask, flash, redirect, request, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 from werkzeug.middleware.proxy_fix import ProxyFix
 from database import db
 
@@ -70,13 +70,22 @@ print(f"[DB] Using local SQLite: {database_url}")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
+
+# Consistent, persistent SECRET_KEY to prevent CSRF tokens from invalidating on server restart
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'tradelytics-permanent-secret-key-2026-9f8a7b6c5d4e3f2a1')
+app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24 hours
 
 # Trust reverse proxy headers (Render / Railway / Nginx)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 csrf = CSRFProtect(app)
 db.init_app(app)
+
+# Graceful CSRF Error Handler: instead of a raw 400 crash page, redirect with a friendly message
+@app.errorhandler(CSRFError)
+def handle_csrf_error(e):
+    flash("Your session expired or the form timed out. Please try logging in again.", "warning")
+    return redirect(request.referrer or url_for('auth.login'))
 
 # Register Blueprints
 app.register_blueprint(auth_bp)
