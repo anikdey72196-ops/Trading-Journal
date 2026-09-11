@@ -1,4 +1,4 @@
-Flask
+﻿Flask
 Flask-SQLAlchemy
 Flask-WTF
 PyMySQL

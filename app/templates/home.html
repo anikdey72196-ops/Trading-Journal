@@ -1,4 +1,4 @@
-{% extends "layout_dashboard.html" %}
+﻿{% extends "layout_dashboard.html" %}
 
 {% block content %}
 
@@ -6,187 +6,212 @@
 {% set win_rate = (total_wins / total_wl * 100) | round(1) if total_wl > 0 else 0 %}
 
 <header class="mb-8">
-    <h1 class="font-headline-xl text-3xl md:text-4xl lg:text-[2rem] text-slate-50 font-bold tracking-tight mb-2">Trader Performance</h1>
-    <p class="text-slate-400 font-body-base">Review your analytical performance and execution discipline for the current period.</p>
+  <h1 class="font-headline-xl text-3xl md:text-4xl text-slate-50 font-bold tracking-tight mb-2">Trader Performance</h1>
+  <p class="text-slate-400 font-body-base">Review your analytical performance and execution discipline for the current period.</p>
 </header>
 
+<!-- STAT CARDS -->
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-    <!-- Stat Object 1: Net P&L -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden group">
-        <div class="flex justify-between items-start mb-2">
-            <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">Net P&L (USD)</p>
-            <span class="text-slate-600"><i class="fa-solid fa-dollar-sign"></i></span>
-        </div>
-        <h2 class="font-headline-xl text-3xl text-primary font-bold mb-2">
-            ${{ "%.2f"|format(total_pnl_usd) }}
-        </h2>
-        <div class="text-sm">
-            {% if total_pnl_usd >= 0 %}
-                <span class="text-emerald-400 font-medium"><i class="fa-solid fa-arrow-up"></i> In Profit</span>
-            {% else %}
-                <span class="text-rose-400 font-medium"><i class="fa-solid fa-arrow-down"></i> In Drawdown</span>
-            {% endif %}
-            <span class="text-slate-500 ml-2 text-xs">1 USD ≈ ₹{{ "%.1f"|format(inr_per_usd) }}</span>
-        </div>
-    </div>
 
-    <!-- Stat Object 2: Win Rate -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden group">
-        <div class="flex justify-between items-start mb-2">
-            <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">System Win Rate</p>
-            <span class="text-slate-600"><i class="fa-solid fa-crosshairs"></i></span>
-        </div>
-        <h2 class="font-headline-xl text-3xl text-secondary font-bold mb-2">{{ win_rate }}%</h2>
-        <div class="text-sm font-medium">
-            <span class="text-emerald-400">{{ total_wins }}W</span>
-            <span class="text-slate-600 mx-1">/</span> 
-            <span class="text-rose-400">{{ total_losses }}L</span>
-        </div>
+  <div class="tilt-card bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden cursor-default"
+       style="background:linear-gradient(135deg,#0f172a 0%,#0d1f3c 100%);">
+    <div class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5" style="background:radial-gradient(circle,#3b82f6,transparent);transform:translate(30%,-30%);"></div>
+    <div class="flex justify-between items-start mb-2">
+      <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">Net P&amp;L (USD)</p>
+      <span class="text-blue-500/60 text-lg"><i class="fa-solid fa-dollar-sign"></i></span>
     </div>
+    <h2 class="font-headline-xl text-3xl font-bold mb-2 glow-blue" id="pnl-counter" data-target="{{ '%.2f'|format(total_pnl_usd) }}">$0.00</h2>
+    <div class="text-sm flex items-center gap-2">
+      {% if total_pnl_usd >= 0 %}
+        <span class="text-emerald-400 font-medium"><i class="fa-solid fa-arrow-up"></i> In Profit</span>
+      {% else %}
+        <span class="text-rose-400 font-medium"><i class="fa-solid fa-arrow-down"></i> In Drawdown</span>
+      {% endif %}
+      <span class="text-slate-500 text-xs">1 USD ≈ ₹{{ "%.1f"|format(inr_per_usd) }}</span>
+    </div>
+  </div>
 
-    <!-- Stat Object 3: Daily Volume -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden group">
-        <div class="flex justify-between items-start mb-2">
-            <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">Daily Volume</p>
-            <span class="text-slate-600"><i class="fa-solid fa-chart-line"></i></span>
-        </div>
-        <h2 class="font-headline-xl text-3xl text-slate-100 font-bold mb-2">{{ trades_today | default(0) }}</h2>
-        <div class="text-sm text-slate-400">
-            <span class="text-emerald-400"><i class="fa-solid fa-arrow-trend-up"></i></span>
-            {{ total_trades_count | default(0) }} Lifetime Executions
-        </div>
+  <div class="tilt-card bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden cursor-default"
+       style="background:linear-gradient(135deg,#0f172a 0%,#0a1f1a 100%);">
+    <div class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5" style="background:radial-gradient(circle,#10b981,transparent);transform:translate(30%,-30%);"></div>
+    <div class="flex justify-between items-start mb-2">
+      <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">System Win Rate</p>
+      <span class="text-emerald-500/60 text-lg"><i class="fa-solid fa-crosshairs"></i></span>
     </div>
+    <h2 class="font-headline-xl text-3xl text-secondary font-bold mb-2 glow-purple" id="winrate-counter" data-target="{{ win_rate }}">0%</h2>
+    <div class="text-sm font-medium flex items-center gap-2">
+      <span class="text-emerald-400">{{ total_wins }}W</span>
+      <span class="text-slate-600">/</span>
+      <span class="text-rose-400">{{ total_losses }}L</span>
+    </div>
+  </div>
 
-    <!-- Stat Object 4: Trades Left -->
-    <div class="bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden group">
-        <div class="flex justify-between items-start mb-2">
-            <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">Trades Left</p>
-            <span class="text-slate-600"><i class="fa-solid fa-bolt"></i></span>
-        </div>
-        <h2 class="font-headline-xl text-3xl text-amber-400 font-bold mb-2">{{ remaining_trades | default(10) }}</h2>
-        <div class="text-sm text-slate-400">
-            <i class="fa-regular fa-clock mr-1"></i> Daily Limit: {{ today_target.max_trades if today_target else user.Daily_max_trade }}
-        </div>
+  <div class="tilt-card bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden cursor-default"
+       style="background:linear-gradient(135deg,#0f172a 0%,#1a1030 100%);">
+    <div class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5" style="background:radial-gradient(circle,#8b5cf6,transparent);transform:translate(30%,-30%);"></div>
+    <div class="flex justify-between items-start mb-2">
+      <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">Daily Volume</p>
+      <span class="text-purple-500/60 text-lg"><i class="fa-solid fa-chart-line"></i></span>
     </div>
+    <h2 class="font-headline-xl text-3xl text-slate-100 font-bold mb-2" id="vol-counter" data-target="{{ trades_today | default(0) }}">0</h2>
+    <div class="text-sm text-slate-400 flex items-center gap-2">
+      <span class="text-emerald-400"><i class="fa-solid fa-arrow-trend-up"></i></span>
+      {{ total_trades_count | default(0) }} Lifetime Executions
+    </div>
+  </div>
+
+  <div class="tilt-card bg-slate-900 border border-slate-800 rounded-xl p-6 relative overflow-hidden cursor-default"
+       style="background:linear-gradient(135deg,#0f172a 0%,#1f1700 100%);">
+    <div class="absolute top-0 right-0 w-32 h-32 rounded-full opacity-5" style="background:radial-gradient(circle,#f59e0b,transparent);transform:translate(30%,-30%);"></div>
+    <div class="flex justify-between items-start mb-2">
+      <p class="text-slate-500 font-label-caps uppercase text-xs font-semibold tracking-wider">Trades Left</p>
+      <span class="text-amber-500/60 text-lg"><i class="fa-solid fa-bolt"></i></span>
+    </div>
+    <h2 class="font-headline-xl text-3xl text-amber-400 font-bold mb-2 glow-amber" id="left-counter" data-target="{{ remaining_trades | default(10) }}">0</h2>
+    <div class="text-sm text-slate-400 flex items-center gap-2">
+      <i class="fa-regular fa-clock"></i>
+      Daily Limit: {{ today_target.max_trades if today_target else user.Daily_max_trade }}
+    </div>
+  </div>
+
 </div>
 
-<!-- 7-Day Performance -->
-<div class="mb-10">
-    <div class="flex items-center gap-3 mb-6">
-        <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-calendar-week text-blue-500 mr-2"></i> 7-Day Performance</h2>
+<!-- 7-DAY PERFORMANCE -->
+<div class="mb-8">
+  <div class="flex items-center gap-3 mb-5">
+    <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-calendar-week text-blue-500 mr-2"></i> 7-Day Performance</h2>
+  </div>
+  <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+    {% for day in daily_history %}
+    <div class="tilt-card bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-center cursor-default"
+         style="background:linear-gradient(160deg,#0f172a,#0d1b2e);">
+      <div class="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">{{ day.date.strftime('%a, %b %d') }}</div>
+      <div class="text-lg font-bold mb-1 font-data-mono {% if day.pnl > 0 %}text-emerald-400{% elif day.pnl < 0 %}text-rose-400{% else %}text-slate-300{% endif %}"
+           style="{% if day.pnl > 0 %}text-shadow:0 0 12px rgba(16,185,129,.5){% elif day.pnl < 0 %}text-shadow:0 0 12px rgba(244,63,94,.4){% endif %}">
+        {{ '+' if day.pnl > 0 else '' }}{{ "%.2f"|format(day.pnl) }}
+      </div>
+      <div class="text-xs text-slate-500"><i class="fa-solid fa-chart-simple"></i> {{ day.volume }} Trades</div>
     </div>
-    
-    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-        {% for day in daily_history %}
-        <div class="bg-slate-900/80 border border-slate-800 rounded-lg p-4 text-center transition-all hover:bg-slate-800 hover:border-slate-700 shadow-sm cursor-default">
-            <div class="text-xs text-slate-400 font-medium mb-2 uppercase tracking-wider">{{ day.date.strftime('%a, %b %d') }}</div>
-            <div class="text-lg font-bold mb-1 {% if day.pnl > 0 %}text-emerald-400{% elif day.pnl < 0 %}text-rose-400{% else %}text-slate-300{% endif %}">
-                {{ '+' if day.pnl > 0 else '' }}{{ "%.2f"|format(day.pnl) }}
-            </div>
-            <div class="text-xs text-slate-500">
-                <i class="fa-solid fa-chart-simple"></i> {{ day.volume }} Trades
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+    {% endfor %}
+  </div>
 </div>
 
-<!-- Execution Log -->
+<!-- EXECUTION LOG -->
 <div>
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-6 gap-4">
-        <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-clock-rotate-left text-blue-500 mr-2"></i> Execution Log</h2>
-        <span class="text-sm text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">{{ trades_today | default(0) }} Today's Executions</span>
-    </div>
-    
-    <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow">
-        {% if log_trades.items %}
-        <div class="overflow-x-auto">
-            <table class="w-full text-left text-sm text-slate-300 min-w-[700px]">
-                <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-800">
-                    <tr>
-                        <th class="px-6 py-4 font-semibold tracking-wider">Date / Time</th>
-                        <th class="px-6 py-4 font-semibold tracking-wider">Instrument</th>
-                        <th class="px-6 py-4 font-semibold tracking-wider">Volume/Lot</th>
-                        <th class="px-6 py-4 font-semibold tracking-wider">Net P&L</th>
-                        <th class="px-6 py-4 font-semibold tracking-wider">In USD</th>
-                        <th class="px-6 py-4 font-semibold tracking-wider hidden md:table-cell">Reason</th>
-                        <th class="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-slate-800/80">
-                    {% for trade in log_trades.items %}
-                    <tr class="hover:bg-slate-800/30 transition-colors">
-                        <td class="px-6 py-4 whitespace-nowrap">{{ trade.trade_date.strftime('%B %d, %Y') }}</td>
-                        <td class="px-6 py-4 font-medium text-slate-200">{{ trade.trade_instruments }}</td>
-                        <td class="px-6 py-4 text-slate-400">{{ "%.2f"|format(trade.trade_lots) }}</td>
-                        <td class="px-6 py-4">
-                            {% if trade.profit_currency == 'INR' %}
-                                <div class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold {% if trade.trade_pnl >= 0 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% endif %}">
-                                    ₹{{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.0f"|format(trade.trade_pnl) }}
-                                </div>
-                                <div class="text-[10px] text-slate-500 mt-1 uppercase ml-1" title="Indian Rupee"><i class="fa-brands fa-india"></i> INR</div>
-                            {% else %}
-                                <div class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold {% if trade.trade_pnl >= 0 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% endif %}">
-                                    ${{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.2f"|format(trade.trade_pnl) }}
-                                </div>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4">
-                            {% if trade.profit_currency == 'INR' %}
-                                {% set usd_eq = trade.trade_pnl / inr_per_usd %}
-                                <span class="text-slate-400 font-medium">
-                                    ${{ '+' if usd_eq >= 0 else '' }}{{ "%.2f"|format(usd_eq) }}
-                                </span>
-                            {% else %}
-                                <span class="text-slate-600">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-6 py-4 hidden md:table-cell">
-                            <div class="max-w-[150px] truncate text-slate-400 text-xs" title="{{ trade.trade_reason }}">
-                                {{ trade.trade_reason if trade.trade_reason else '-' }}
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 text-right whitespace-nowrap">
-                            <a href="{{ url_for('main.edit_trade', trade_id=trade.id) }}" class="text-blue-400 hover:text-blue-300 mr-3 transition-colors p-1" title="Edit Trade"><i class="fa-solid fa-pen"></i></a>
-                            <form action="{{ url_for('main.delete_trade', trade_id=trade.id) }}" method="POST" class="inline" onsubmit="return confirm('Are you sure you want to delete this trade?');">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                <button type="submit" class="text-rose-400 hover:text-rose-300 transition-colors p-1" title="Delete Trade"><i class="fa-solid fa-trash"></i></button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Pagination -->
-        {% if log_trades.pages > 1 %}
-        <div class="flex flex-wrap items-center justify-center border-t border-slate-800/80 bg-slate-900/30 px-4 py-4 sm:px-6 gap-4">
-            {% if log_trades.has_prev %}
-                <a href="{{ url_for('main.home', page=log_trades.prev_num) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 rounded-md text-sm transition-all shadow-sm">&laquo; Prev</a>
-            {% else %}
-                <span class="px-3 py-1.5 bg-slate-900 text-slate-600 border border-slate-800 rounded-md text-sm cursor-not-allowed">&laquo; Prev</span>
-            {% endif %}
-            
-            <span class="text-slate-400 text-sm bg-slate-950/50 px-3 py-1.5 rounded-md border border-slate-800">Page <strong class="text-slate-200 mx-1">{{ log_trades.page }}</strong> of <strong class="text-slate-200 mx-1">{{ log_trades.pages }}</strong></span>
-            
-            {% if log_trades.has_next %}
-                <a href="{{ url_for('main.home', page=log_trades.next_num) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 rounded-md text-sm transition-all shadow-sm">Next &raquo;</a>
-            {% else %}
-                <span class="px-3 py-1.5 bg-slate-900 text-slate-600 border border-slate-800 rounded-md text-sm cursor-not-allowed">Next &raquo;</span>
-            {% endif %}
-        </div>
-        {% endif %}
+  <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-5 gap-4">
+    <h2 class="text-xl font-bold text-slate-100"><i class="fa-solid fa-clock-rotate-left text-blue-500 mr-2"></i> Execution Log</h2>
+    <span class="text-sm text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">{{ trades_today | default(0) }} Today's Executions</span>
+  </div>
 
-        {% else %}
-        <!-- Empty State -->
-        <div class="flex flex-col items-center justify-center py-16 px-4 text-center border-t border-slate-800/50">
-            <div class="text-6xl mb-4 opacity-70">🪐</div>
-            <h3 class="text-xl font-bold text-slate-200 mb-2">No Trades Executed Today</h3>
-            <p class="text-slate-400 max-w-md mx-auto">Your execution log for today is empty. Execute your first order via the <strong class="text-slate-300">New Order</strong> button above.</p>
-        </div>
-        {% endif %}
+  <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow" style="background:linear-gradient(160deg,#0f172a,#0a1122);">
+    {% if log_trades.items %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-sm text-slate-300 min-w-[700px]">
+        <thead class="text-xs text-slate-400 uppercase bg-slate-800/40 border-b border-slate-800">
+          <tr>
+            <th class="px-6 py-4 font-semibold tracking-wider">Date / Time</th>
+            <th class="px-6 py-4 font-semibold tracking-wider">Instrument</th>
+            <th class="px-6 py-4 font-semibold tracking-wider">Volume / Lot</th>
+            <th class="px-6 py-4 font-semibold tracking-wider">Net P&amp;L</th>
+            <th class="px-6 py-4 font-semibold tracking-wider">In USD</th>
+            <th class="px-6 py-4 font-semibold tracking-wider hidden md:table-cell">Reason</th>
+            <th class="px-6 py-4 font-semibold tracking-wider text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/80">
+          {% for trade in log_trades.items %}
+          <tr class="hover:bg-blue-500/5 transition-all">
+            <td class="px-6 py-4 whitespace-nowrap text-slate-400">{{ trade.trade_date.strftime('%B %d, %Y') }}</td>
+            <td class="px-6 py-4 font-bold text-slate-100 tracking-wide">{{ trade.trade_instruments }}</td>
+            <td class="px-6 py-4 text-slate-400">{{ "%.2f"|format(trade.trade_lots) }}</td>
+            <td class="px-6 py-4">
+              {% if trade.profit_currency == 'INR' %}
+                <div class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold {% if trade.trade_pnl >= 0 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% endif %}">
+                  ₹{{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.0f"|format(trade.trade_pnl) }}
+                </div>
+                <div class="text-[10px] text-slate-500 mt-1 uppercase ml-1"><i class="fa-brands fa-india"></i> INR</div>
+              {% else %}
+                <div class="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-bold {% if trade.trade_pnl >= 0 %}bg-emerald-500/10 text-emerald-400 border border-emerald-500/20{% else %}bg-rose-500/10 text-rose-400 border border-rose-500/20{% endif %}">
+                  ${{ '+' if trade.trade_pnl >= 0 else '' }}{{ "%.2f"|format(trade.trade_pnl) }}
+                </div>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4">
+              {% if trade.profit_currency == 'INR' %}
+                {% set usd_eq = trade.trade_pnl / inr_per_usd %}
+                <span class="text-slate-400 font-medium">${{ '+' if usd_eq >= 0 else '' }}{{ "%.2f"|format(usd_eq) }}</span>
+              {% else %}
+                <span class="text-slate-600">—</span>
+              {% endif %}
+            </td>
+            <td class="px-6 py-4 hidden md:table-cell">
+              <div class="max-w-[150px] truncate text-slate-400 text-xs" title="{{ trade.trade_reason }}">{{ trade.trade_reason if trade.trade_reason else '-' }}</div>
+            </td>
+            <td class="px-6 py-4 text-right whitespace-nowrap">
+              <a href="{{ url_for('main.edit_trade', trade_id=trade.id) }}" class="text-blue-400 hover:text-blue-300 mr-3 transition-colors p-1 hover:bg-blue-500/10 rounded" title="Edit"><i class="fa-solid fa-pen"></i></a>
+              <form action="{{ url_for('main.delete_trade', trade_id=trade.id) }}" method="POST" class="inline" onsubmit="return confirm('Delete this trade?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="text-rose-400 hover:text-rose-300 transition-colors p-1 hover:bg-rose-500/10 rounded" title="Delete"><i class="fa-solid fa-trash"></i></button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
+
+    {% if log_trades.pages > 1 %}
+    <div class="flex flex-wrap items-center justify-center border-t border-slate-800/80 bg-slate-900/30 px-4 py-4 gap-4">
+      {% if log_trades.has_prev %}
+        <a href="{{ url_for('main.home', page=log_trades.prev_num) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 rounded-md text-sm transition-all">« Prev</a>
+      {% else %}
+        <span class="px-3 py-1.5 bg-slate-900 text-slate-600 border border-slate-800 rounded-md text-sm cursor-not-allowed">« Prev</span>
+      {% endif %}
+      <span class="text-slate-400 text-sm bg-slate-950/50 px-3 py-1.5 rounded-md border border-slate-800">Page <strong class="text-slate-200 mx-1">{{ log_trades.page }}</strong> of <strong class="text-slate-200 mx-1">{{ log_trades.pages }}</strong></span>
+      {% if log_trades.has_next %}
+        <a href="{{ url_for('main.home', page=log_trades.next_num) }}" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 hover:border-slate-600 rounded-md text-sm transition-all">Next »</a>
+      {% else %}
+        <span class="px-3 py-1.5 bg-slate-900 text-slate-600 border border-slate-800 rounded-md text-sm cursor-not-allowed">Next »</span>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="flex flex-col items-center justify-center py-16 px-4 text-center border-t border-slate-800/50">
+      <div class="text-6xl mb-4 opacity-70">🪐</div>
+      <h3 class="text-xl font-bold text-slate-200 mb-2">No Trades Executed Today</h3>
+      <p class="text-slate-400 max-w-md">Your execution log for today is empty. Execute your first order via the <strong class="text-slate-300">New Order</strong> button above.</p>
+    </div>
+    {% endif %}
+  </div>
 </div>
+
+<script>
+function animateCounter(el, target, prefix, suffix, decimals, duration) {
+  const start = performance.now();
+  const isNeg = target < 0;
+  const abs   = Math.abs(target);
+  function step(now) {
+    const t    = Math.min((now - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - t, 4);
+    el.textContent = (isNeg ? '-' : '') + prefix + (abs * ease).toFixed(decimals) + suffix;
+    if (t < 1) { requestAnimationFrame(step); }
+    else { el.textContent = (isNeg ? '-' : (target > 0 && prefix === '$' ? '+' : '')) + prefix + abs.toFixed(decimals) + suffix; }
+  }
+  requestAnimationFrame(step);
+}
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    const pnlEl  = document.getElementById('pnl-counter');
+    const wrEl   = document.getElementById('winrate-counter');
+    const volEl  = document.getElementById('vol-counter');
+    const leftEl = document.getElementById('left-counter');
+    if (pnlEl)  animateCounter(pnlEl,  parseFloat(pnlEl.dataset.target)  || 0, '$', '', 2, 1400);
+    if (wrEl)   animateCounter(wrEl,   parseFloat(wrEl.dataset.target)   || 0, '', '%', 1, 1200);
+    if (volEl)  animateCounter(volEl,  parseInt(volEl.dataset.target)    || 0, '', '', 0, 900);
+    if (leftEl) animateCounter(leftEl, parseInt(leftEl.dataset.target)   || 0, '', '', 0, 900);
+  }, 1900);
+});
+</script>
 
 {% endblock %}

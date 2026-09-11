@@ -1,2 +1,1 @@
-release: python create_tables.py
-web: gunicorn --chdir app/routes app:app
+﻿web: gunicorn --chdir app/routes app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120

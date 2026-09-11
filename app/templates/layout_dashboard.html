@@ -1,125 +1,756 @@
-<!DOCTYPE html><html class="dark" lang="en"><head>
+﻿<!DOCTYPE html><html class="dark" lang="en"><head>
 <meta charset="utf-8">
 <meta content="width=device-width, initial-scale=1.0" name="viewport">
-<title>Tradelytics | Professional Trading Journal</title>
+<title>TRADELYTICS | Professional Trading Journal</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@600;700;800&amp;family=Space+Grotesk:wght@500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Manrope:wght@600;700;800&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "primary": "#adc6ff",
-                        "secondary": "#c0c1ff"
-                    },
-                    "fontFamily": {
-                        "label-caps": ["Space Grotesk"],
-                        "body-base": ["Inter"],
-                        "body-sm": ["Inter"],
-                        "headline-xl": ["Manrope"],
-                        "headline-md": ["Manrope"],
-                        "data-mono": ["Space Grotesk"]
-                    }
-                }
-            }
-        }
-    </script>
+  tailwind.config = {
+    darkMode: "class",
+    theme: { extend: {
+      colors: { primary: "#adc6ff", secondary: "#c0c1ff" },
+      fontFamily: {
+        "label-caps":  ["Space Grotesk"],
+        "body-base":   ["Inter"],
+        "body-sm":     ["Inter"],
+        "headline-xl": ["Manrope"],
+        "headline-md": ["Manrope"],
+        "data-mono":   ["Space Grotesk"]
+      }
+    }}
+  }
+</script>
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-        }
-        body {
-            background-color: #020617;
-            color: #dae2fd;
-        }
-    </style>
+  /* Base & 3D Background setup */
+  html { background-color: #020617; }
+  body {
+    background-color: transparent !important;
+    color: #dae2fd;
+    min-height: 100vh;
+    margin: 0;
+    overflow-x: hidden;
+  }
+
+  /* 3D WebGL Canvas Layer (behind all UI, non-blocking) */
+  #tradelytics-bg {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: -1;
+    pointer-events: none;
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Material symbols */
+  .material-symbols-outlined { font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24; }
+
+  /* Loading screen */
+  #tl-loader {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #020617;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    transition: opacity .8s ease;
+  }
+  .tl-logo-text {
+    font-family: 'Manrope', sans-serif; font-size: 2.6rem; font-weight: 800; letter-spacing: -2px;
+    background: linear-gradient(90deg, #3b82f6, #adc6ff, #10b981);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 0 18px rgba(59,130,246,.6));
+    margin-bottom: 6px;
+  }
+  .tl-logo-sub { font-size: .7rem; color: #475569; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 32px; }
+  .tl-bar { width: 180px; height: 2px; background: rgba(255,255,255,.07); border-radius: 2px; overflow: hidden; }
+  .tl-progress { width: 0%; height: 100%; background: linear-gradient(90deg, #3b82f6, #10b981); transition: width 1.8s ease-in-out; }
+
+  /* App wrapper */
+  #app-root { position: relative; z-index: 1; opacity: 0; transition: opacity .9s ease; }
+
+  /* 3D tilt cards */
+  .tilt-card {
+    transform-style: preserve-3d;
+    transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    will-change: transform;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .tilt-card:hover {
+    box-shadow: 0 20px 50px rgba(0,0,0,.55), 0 0 0 1px rgba(59,130,246,.3);
+    border-color: rgba(59,130,246,.4) !important;
+  }
+
+  /* Glow stat values */
+  .glow-blue   { text-shadow: 0 0 18px rgba(173,198,255,.6); }
+  .glow-green  { text-shadow: 0 0 18px rgba(16,185,129,.6);  }
+  .glow-amber  { text-shadow: 0 0 18px rgba(245,158,11,.6);  }
+  .glow-purple { text-shadow: 0 0 18px rgba(192,193,255,.6); }
+
+  /* FAB pulse */
+  .fab-pulse { animation: fabRipple 2.4s infinite; }
+  @keyframes fabRipple {
+    0%   { box-shadow: 0 0 0 0   rgba(59,130,246,.65); }
+    70%  { box-shadow: 0 0 0 18px rgba(59,130,246,0);   }
+    100% { box-shadow: 0 0 0 0   rgba(59,130,246,0);    }
+  }
+
+  /* Sidebar */
+  aside {
+    background: rgba(15, 23, 42, 0.78) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  /* Header */
+  header {
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    background: rgba(2, 6, 23, 0.82) !important;
+  }
+</style>
 </head>
 <body class="font-body-base antialiased">
-<header class="sticky top-0 w-full z-50 bg-slate-950/80 backdrop-blur-md border-b border-slate-800 flex justify-between items-center h-14 px-6">
+
+<!-- 3D WebGL Canvas Layer -->
+<canvas id="tradelytics-bg" aria-hidden="true"></canvas>
+
+<!-- Loading Screen -->
+<div id="tl-loader">
+  <div class="tl-logo-text">TRADELYTICS</div>
+  <div class="tl-logo-sub">Precision Execution</div>
+  <div class="tl-bar"><div class="tl-progress" id="tl-progress"></div></div>
+</div>
+
+<!-- App Root -->
+<div id="app-root">
+
+<header class="sticky top-0 w-full z-50 border-b border-slate-800/80 flex justify-between items-center h-14 px-6">
 <div class="flex items-center gap-8">
-<a href="{{ url_for('main.home') }}" class="text-xl font-bold tracking-tighter text-slate-50 font-headline-xl no-underline">
-    <i class="fa-solid fa-chart-simple text-blue-500 mr-2"></i>TRADELYTICS
+<a href="{{ url_for('main.home') }}" class="text-xl font-bold tracking-tighter text-slate-50 font-headline-xl no-underline flex items-center gap-2">
+  <i class="fa-solid fa-chart-simple text-blue-500"></i>TRADELYTICS
 </a>
 <nav class="hidden md:flex gap-6 items-center">
 <a class="{% if request.endpoint == 'main.home' %}text-blue-400 font-semibold{% else %}text-slate-500 hover:text-slate-200{% endif %} font-manrope tracking-tight text-sm transition-all" href="{{ url_for('main.home') }}">Overview</a>
+<a class="{% if request.endpoint == 'main.performance_log' %}text-blue-400 font-semibold{% else %}text-slate-500 hover:text-slate-200{% endif %} font-manrope tracking-tight text-sm transition-all" href="{{ url_for('main.performance_log') }}">Performance Logs</a>
 <a class="text-slate-500 hover:text-red-400 hover:bg-slate-900/50 px-3 py-1 rounded transition-all font-manrope tracking-tight text-sm" href="{{ url_for('auth.logout') }}">Sign Out</a>
 </nav>
 </div>
 <div class="flex items-center gap-4">
-
 {% if remaining_trades is defined and remaining_trades == 0 %}
 <a href="#" onclick="event.preventDefault();" class="bg-slate-700 text-slate-300 px-4 py-1.5 rounded-lg text-sm font-semibold flex items-center gap-2 shadow-sm border border-slate-600/50 hidden sm:flex opacity-60 cursor-not-allowed">
-    <i class="fa-solid fa-plus"></i> New Order
+  <i class="fa-solid fa-plus"></i> New Order
 </a>
 {% else %}
-<a href="{{ url_for('main.add_trade') }}" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors flex items-center gap-2 shadow-sm border border-blue-500/50 hidden sm:flex">
-    <i class="fa-solid fa-plus"></i> New Order
+<a href="{{ url_for('main.add_trade') }}" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-lg text-sm font-semibold transition-all flex items-center gap-2 shadow-sm border border-blue-500/50 hidden sm:flex fab-pulse">
+  <i class="fa-solid fa-plus"></i> New Order
 </a>
 {% endif %}
-<div class="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-bold text-sm overflow-hidden border border-slate-700 mx-2">
-    {{ user.Name[0]|upper if user else 'U' }}
+<div class="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white font-bold text-sm border border-slate-700 mx-2 shadow-lg" style="box-shadow:0 0 12px rgba(59,130,246,.4)">
+  {{ user.Name[0]|upper if user else 'U' }}
 </div>
-<div class="text-sm font-semibold text-slate-300 hidden md:block mr-2">
-    {{ user.Name if user else 'Trader' }}
-</div>
+<div class="text-sm font-semibold text-slate-300 hidden md:block mr-2">{{ user.Name if user else 'Trader' }}</div>
 </div>
 </header>
+
 <div class="flex">
-<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-64 border-r border-slate-800 bg-slate-900 flex flex-col py-4 hidden lg:flex z-40">
+<aside class="fixed left-0 top-14 h-[calc(100vh-3.5rem)] w-64 border-r border-slate-800/80 flex flex-col py-4 hidden lg:flex z-40">
 <div class="px-6 mb-8">
-<p class="text-blue-400 font-headline-md text-sm font-bold tracking-tight">Main Dashboard</p>
-<p class="text-slate-500 text-[11px] uppercase tracking-widest font-semibold flex items-center gap-2"><i class="fa-solid fa-bolt text-yellow-500"></i> Precision Execution</p>
+  <p class="text-blue-400 font-headline-md text-sm font-bold tracking-tight">Main Dashboard</p>
+  <p class="text-slate-500 text-[11px] uppercase tracking-widest font-semibold flex items-center gap-2 mt-1"><i class="fa-solid fa-bolt text-yellow-500"></i> Precision Execution</p>
 </div>
 <nav class="flex-1">
-<a class="{% if request.endpoint == 'main.home' %}bg-blue-500/10 text-blue-400 border-r-2 border-blue-500{% else %}text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-r-2 border-transparent{% endif %} flex items-center gap-3 px-6 py-3 font-manrope text-sm font-medium transition-colors" href="{{ url_for('main.home') }}">
-<span class="material-symbols-outlined">dashboard</span>
-                    Overview
-                </a>
-<a class="{% if request.endpoint == 'main.performance_log' %}bg-blue-500/10 text-blue-400 border-r-2 border-blue-500{% else %}text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-r-2 border-transparent{% endif %} flex items-center gap-3 px-6 py-3 font-manrope text-sm font-medium transition-colors" href="{{ url_for('main.performance_log') }}">
-<span class="material-symbols-outlined">analytics</span>
-                    Performance Logs
-                </a>
+<a class="{% if request.endpoint == 'main.home' %}bg-blue-500/10 text-blue-400 border-r-2 border-blue-500{% else %}text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-r-2 border-transparent{% endif %} flex items-center gap-3 px-6 py-3 font-manrope text-sm font-medium transition-all" href="{{ url_for('main.home') }}">
+  <span class="material-symbols-outlined">dashboard</span> Overview
+</a>
+<a class="{% if request.endpoint == 'main.performance_log' %}bg-blue-500/10 text-blue-400 border-r-2 border-blue-500{% else %}text-slate-400 hover:bg-slate-800 hover:text-slate-200 border-r-2 border-transparent{% endif %} flex items-center gap-3 px-6 py-3 font-manrope text-sm font-medium transition-all" href="{{ url_for('main.performance_log') }}">
+  <span class="material-symbols-outlined">analytics</span> Performance Logs
+</a>
 </nav>
 </aside>
-<main class="lg:ml-64 flex-1 min-h-[calc(100vh-3.5rem)] p-4 md:p-8 bg-[#020617] w-full max-w-[100vw]">
 
-    <!-- Flash Messages -->
-    {% if remaining_trades is defined and remaining_trades == 0 %}
-        <div class="mb-6 w-full">
-            <div class="bg-emerald-900/40 border border-emerald-500/30 text-emerald-200 px-4 py-4 rounded-lg shadow backdrop-blur-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 shrink-0 text-xl">
-                        🎉
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-emerald-100 font-headline-md tracking-tight">Goal crushed! Time to celebrate (and review your trades).</h4>
-                        <p class="text-xs text-emerald-300/80 mt-0.5">You've reached your daily execution limit. Protect your mental capital.</p>
-                    </div>
-                </div>
-            </div>
+<main class="lg:ml-64 flex-1 min-h-[calc(100vh-3.5rem)] p-4 md:p-8 w-full max-w-[100vw]">
+
+  {% if remaining_trades is defined and remaining_trades == 0 %}
+  <div class="mb-6 w-full">
+    <div class="bg-emerald-900/40 border border-emerald-500/30 text-emerald-200 px-4 py-4 rounded-xl shadow backdrop-blur-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4" style="box-shadow:0 0 30px rgba(16,185,129,.1)">
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 shrink-0 text-xl">🎉</div>
+        <div>
+          <h4 class="font-bold text-emerald-100 font-headline-md tracking-tight">Goal crushed! Time to celebrate (and review your trades).</h4>
+          <p class="text-xs text-emerald-300/80 mt-0.5">You've reached your daily execution limit. Protect your mental capital.</p>
         </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="mb-6 w-full">
+        {% for category, message in messages %}
+          <div class="bg-slate-800/80 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow backdrop-blur-sm flex items-center gap-3 mb-2">
+            <i class="fa-solid fa-bell text-blue-400"></i>
+            <span class="text-sm">{{ message }}</span>
+          </div>
+        {% endfor %}
+      </div>
     {% endif %}
+  {% endwith %}
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <div class="mb-6 w-full">
-                {% for category, message in messages %}
-                    <div class="bg-slate-800/80 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg shadow backdrop-blur-sm flex items-center gap-3 mb-2">
-                        <i class="fa-solid fa-bell text-blue-400"></i>
-                        <span class="text-sm">{{ message }}</span>
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-    {% endwith %}
+  {% block content %}{% endblock %}
 
-    {% block content %}
-    {% endblock %}
-    
 </main>
 </div>
+</div><!-- #app-root -->
+
 <script src="{{ url_for('static', filename='javascript/script.js') }}"></script>
+
+<!-- ==========================================================================
+     TRADELYTICS · Futuristic 3D Trading Horizon (Three.js r128)
+     ========================================================================== -->
+<script>
+(function () {
+  'use strict';
+
+  var canvas = document.getElementById('tradelytics-bg');
+  if (!canvas || !window.THREE) { return; }
+
+  /* ------------------------------------------------------------------ *
+   * 0 · ENVIRONMENT FLAGS
+   * ------------------------------------------------------------------ */
+  var isSmall      = window.matchMedia('(max-width: 768px)').matches;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ------------------------------------------------------------------ *
+   * 1 · RENDERER / SCENE / CAMERA
+   * ------------------------------------------------------------------ */
+  var renderer = new THREE.WebGLRenderer({
+    canvas: canvas,
+    antialias: !isSmall,
+    alpha: false,
+    powerPreference: 'high-performance'
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setClearColor(0x020617, 1);
+  renderer.autoClear = true;
+
+  var BG_COLOR     = 0x020617;   // Deep Space Obsidian
+  var FOG_DENSITY  = 0.016;
+
+  var scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(BG_COLOR, FOG_DENSITY);
+
+  var camera = new THREE.PerspectiveCamera(
+    58, window.innerWidth / window.innerHeight, 0.1, 700
+  );
+  camera.position.set(0, 8, 26);
+
+  /* ------------------------------------------------------------------ *
+   * 2 · INFINITE NEON GRID FLOOR  (custom shader, 1 draw call)
+   * ------------------------------------------------------------------ */
+  var gridUniforms = {
+    uTime:       { value: 0 },
+    uPhase:      { value: 0 },
+    uMainColor:  { value: new THREE.Color(0x00d4ff) },  // Neon Electric Blue
+    uSubColor:   { value: new THREE.Color(0x94a3b8) },  // Metallic Silver
+    uFogColor:   { value: new THREE.Color(BG_COLOR) },
+    uFogDensity: { value: FOG_DENSITY }
+  };
+
+  var gridGeo = new THREE.PlaneGeometry(1800, 1800, 1, 1);
+  gridGeo.rotateX(-Math.PI / 2);
+
+  var gridMat = new THREE.ShaderMaterial({
+    uniforms: gridUniforms,
+    transparent: true,
+    depthWrite: false,
+    extensions: { derivatives: true },
+    vertexShader: [
+      'varying vec3  vWorld;',
+      'varying float vDist;',
+      'void main() {',
+      '  vec4 wp = modelMatrix * vec4(position, 1.0);',
+      '  vWorld  = wp.xyz;',
+      '  vec4 mv = viewMatrix * wp;',
+      '  vDist   = -mv.z;',
+      '  gl_Position = projectionMatrix * mv;',
+      '}'
+    ].join('\n'),
+    fragmentShader: [
+      'uniform float uTime;',
+      'uniform float uPhase;',
+      'uniform vec3  uMainColor;',
+      'uniform vec3  uSubColor;',
+      'uniform vec3  uFogColor;',
+      'uniform float uFogDensity;',
+      'varying vec3  vWorld;',
+      'varying float vDist;',
+      '',
+      'float gridLine(vec2 coord, float spacing, float thickness) {',
+      '  vec2 c = coord / spacing;',
+      '  vec2 g = abs(fract(c - 0.5) - 0.5);',
+      '  vec2 w = fwidth(c) * thickness;',
+      '  vec2 l = 1.0 - smoothstep(vec2(0.0), w, g);',
+      '  return max(l.x, l.y);',
+      '}',
+      '',
+      'void main() {',
+      '  vec2 p = vWorld.xz;',
+      '  p.y += uPhase * 4.0;',                    // grid flows toward viewer
+      '',
+      '  float minor = gridLine(p,  2.0, 0.85);',
+      '  float major = gridLine(p, 10.0, 1.30);',
+      '',
+      '  float wave = 0.5 + 0.5 * sin(vWorld.z * 0.05 + uTime * 1.7);',
+      '',
+      '  vec3 col  = uSubColor  * (minor * 0.30);',
+      '  col      += uMainColor * (major * (0.45 + wave * 0.80));',
+      '',
+      '  float alpha = minor * 0.22 + major * 0.88;',
+      '',
+      '  float fogF = 1.0 - exp(-pow(uFogDensity * vDist, 2.0));',
+      '  alpha *= (1.0 - fogF);',
+      '  col    = mix(col, uFogColor, fogF);',
+      '',
+      '  if (alpha < 0.004) discard;',
+      '  gl_FragColor = vec4(col, alpha);',
+      '}'
+    ].join('\n')
+  });
+
+  var grid = new THREE.Mesh(gridGeo, gridMat);
+  grid.renderOrder = 0;
+  grid.frustumCulled = false;
+  scene.add(grid);
+
+  /* ------------------------------------------------------------------ *
+   * 3 · HOLOGRAPHIC CANDLESTICK FORMATIONS
+   * ------------------------------------------------------------------ */
+  var CLUSTERS = [
+    [-30, -18], [-18, -58], [ -6, -96], [  6, -32],
+    [ 16, -74], [ 26, -118], [-24, -142], [  2, -168],
+    [-14, -205], [ 22, -190], [ 34, -52], [-38, -88]
+  ];
+
+  var candleData = [];
+
+  for (var ci = 0; ci < CLUSTERS.length; ci++) {
+    var cx = CLUSTERS[ci][0];
+    var cz = CLUSTERS[ci][1];
+    var n  = 5 + Math.floor(Math.random() * 4);
+
+    for (var i = 0; i < n; i++) {
+      candleData.push({
+        x:      cx + (i - (n - 1) / 2) * 2.55 + (Math.random() - 0.5) * 0.35,
+        z:      cz + (Math.random() - 0.5) * 6.0,
+        bodyH:  2.4 + Math.random() * 9.5,
+        wickUp: 0.9 + Math.random() * 4.2,
+        width:  1.05 + Math.random() * 0.30,
+        bull:   Math.random() > 0.44,
+        phase:  Math.random() * Math.PI * 2,
+        speed:  0.55 + Math.random() * 0.95,
+        amp:    0.20 + Math.random() * 0.20
+      });
+    }
+  }
+
+  var bullCandles = [];
+  var bearCandles = [];
+  for (var k = 0; k < candleData.length; k++) {
+    (candleData[k].bull ? bullCandles : bearCandles).push(candleData[k]);
+  }
+
+  /* Geometry origins are moved to the BOTTOM so scaling grows upward. */
+  var bodyGeo = new THREE.BoxGeometry(1, 1, 1);
+  bodyGeo.translate(0, 0.5, 0);
+
+  var wickGeo = new THREE.BoxGeometry(1, 1, 1);
+  wickGeo.translate(0, 0.5, 0);
+
+  function makeBodyMaterial(hex) {
+    return new THREE.MeshStandardMaterial({
+      color:            new THREE.Color(hex).multiplyScalar(0.22),
+      emissive:         new THREE.Color(hex),
+      emissiveIntensity: 0.95,
+      metalness:        0.35,
+      roughness:        0.22,
+      transparent:      true,
+      opacity:          0.52,
+      depthWrite:       false,
+      fog:              true
+    });
+  }
+
+  function makeWickMaterial(hex) {
+    return new THREE.MeshBasicMaterial({
+      color:              new THREE.Color(hex),
+      transparent:        true,
+      opacity:            0.90,
+      blending:           THREE.AdditiveBlending,
+      depthWrite:         false,
+      fog:                true
+    });
+  }
+
+  function makeInstanced(geo, mat, count) {
+    var mesh = new THREE.InstancedMesh(geo, mat, Math.max(count, 1));
+    mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+    mesh.frustumCulled = false;
+    mesh.renderOrder = 2;
+    return mesh;
+  }
+
+  var bullBody = makeInstanced(bodyGeo, makeBodyMaterial(0x00ff88), bullCandles.length);
+  var bearBody = makeInstanced(bodyGeo, makeBodyMaterial(0xf43f5e), bearCandles.length);
+  var bullWick = makeInstanced(wickGeo, makeWickMaterial(0x00ff88), bullCandles.length);
+  var bearWick = makeInstanced(wickGeo, makeWickMaterial(0x00d4ff), bearCandles.length);
+
+  scene.add(bullBody, bearBody, bullWick, bearWick);
+
+  var dummy = new THREE.Object3D();
+
+  function poseCandles(list, bodyMesh, wickMesh, t, energy) {
+    var boost = 1 + energy * 0.95;
+
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i];
+      var pulse = 1 + Math.sin(t * c.speed + c.phase) * c.amp * boost;
+      var h = Math.max(0.35, c.bodyH * pulse);
+      var w = Math.max(0.15, c.wickUp * pulse);
+
+      /* --- extruded holographic body --- */
+      dummy.position.set(c.x, 0, c.z);
+      dummy.rotation.set(0, 0, 0);
+      dummy.scale.set(c.width, h, c.width * 0.85);
+      dummy.updateMatrix();
+      bodyMesh.setMatrixAt(i, dummy.matrix);
+
+      /* --- neon wick riding on top of the body --- */
+      dummy.position.set(c.x, h, c.z);
+      dummy.scale.set(0.075, w, 0.075);
+      dummy.updateMatrix();
+      wickMesh.setMatrixAt(i, dummy.matrix);
+    }
+
+    bodyMesh.instanceMatrix.needsUpdate = true;
+    wickMesh.instanceMatrix.needsUpdate = true;
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 4 · LIGHTING (neon point lights over the clusters)
+   * ------------------------------------------------------------------ */
+  scene.add(new THREE.AmbientLight(0x1e293b, 1.0));
+
+  var lightGreen = new THREE.PointLight(0x00ff88, 2.8, 130, 1.7);
+  lightGreen.position.set(-22, 16, -30);
+  scene.add(lightGreen);
+
+  var lightBlue = new THREE.PointLight(0x00d4ff, 3.2, 170, 1.7);
+  lightBlue.position.set(24, 18, -70);
+  scene.add(lightBlue);
+
+  var lightBlue2 = new THREE.PointLight(0x3b82f6, 2.4, 220, 1.7);
+  lightBlue2.position.set(0, 26, -145);
+  scene.add(lightBlue2);
+
+  var lightRose = new THREE.PointLight(0xf43f5e, 1.9, 120, 1.7);
+  lightRose.position.set(-30, 10, -160);
+  scene.add(lightRose);
+
+  /* ------------------------------------------------------------------ *
+   * 5 · FLOATING FINANCIAL STREAM NUMBERS
+   * ------------------------------------------------------------------ */
+  function makeTextTexture(text, color) {
+    var cvs = document.createElement('canvas');
+    cvs.width = 512;
+    cvs.height = 128;
+
+    var ctx = cvs.getContext('2d');
+    ctx.clearRect(0, 0, 512, 128);
+    ctx.font = 'bold 68px "SF Mono", "Consolas", "Menlo", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 32;
+    ctx.fillStyle = color;
+    ctx.fillText(text, 256, 68);
+
+    ctx.shadowBlur = 14;
+    ctx.fillText(text, 256, 68);
+
+    var tex = new THREE.CanvasTexture(cvs);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    tex.needsUpdate = true;
+    return tex;
+  }
+
+  var TICKER_TEXTS = [
+    '+12.5%', '-3.24%', 'BTC/USD', 'ETH/USD', '1.0845',  '▲ 2.41%',
+    '▼ 0.87%', 'EUR/USD', '+8.92%', 'NASDAQ', 'XAU/USD', '0.7421',
+    '-1.15%',  'GBP/JPY', 'SOL/USD', '+4.06%', 'SPX',     '▼ 1.92%'
+  ];
+
+  var sprites = [];
+
+  for (var s = 0; s < TICKER_TEXTS.length; s++) {
+    var txt = TICKER_TEXTS[s];
+    var col = (txt.charAt(0) === '-' || txt.indexOf('▼') === 0) ? '#f43f5e'
+            : (txt.charAt(0) === '+' || txt.indexOf('▲') === 0) ? '#00ff88'
+            : '#7dd3fc';
+
+    var spriteMat = new THREE.SpriteMaterial({
+      map: makeTextTexture(txt, col),
+      transparent: true,
+      opacity: 0.70,
+      depthWrite: false,
+      depthTest: true,
+      blending: THREE.AdditiveBlending,
+      fog: true
+    });
+
+    var sprite = new THREE.Sprite(spriteMat);
+    var sc = 0.85 + Math.random() * 0.65;
+    sprite.scale.set(7.2 * sc, 1.8 * sc, 1);
+    sprite.renderOrder = 3;
+
+    var node = {
+      obj:    sprite,
+      baseX:  (Math.random() - 0.5) * 74,
+      baseY:  5 + Math.random() * 21,
+      baseZ:  14 - Math.random() * 205,
+      phase:  Math.random() * Math.PI * 2,
+      bob:    0.6 + Math.random() * 1.4,
+      speed:  0.22 + Math.random() * 0.45,
+      sway:   0.5 + Math.random() * 1.6
+    };
+
+    sprite.position.set(node.baseX, node.baseY, node.baseZ);
+    scene.add(sprite);
+    sprites.push(node);
+  }
+
+  /* ------------------------------------------------------------------ *
+   * 6 · AMBIENT DATA DUST
+   * ------------------------------------------------------------------ */
+  function makeDotTexture() {
+    var cvs = document.createElement('canvas');
+    cvs.width = cvs.height = 64;
+    var ctx = cvs.getContext('2d');
+    var grad = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0.00, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.25, 'rgba(150,215,255,0.70)');
+    grad.addColorStop(1.00, 'rgba(0,170,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 64, 64);
+
+    var tex = new THREE.CanvasTexture(cvs);
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.generateMipmaps = false;
+    return tex;
+  }
+
+  var DUST_COUNT = isSmall ? 340 : 900;
+  var dustPos = new Float32Array(DUST_COUNT * 3);
+
+  for (var d = 0; d < DUST_COUNT; d++) {
+    dustPos[d * 3]     = (Math.random() - 0.5) * 170;
+    dustPos[d * 3 + 1] = Math.random() * 46;
+    dustPos[d * 3 + 2] = 20 - Math.random() * 250;
+  }
+
+  var dustGeo = new THREE.BufferGeometry();
+  dustGeo.setAttribute('position', new THREE.BufferAttribute(dustPos, 3));
+
+  var dust = new THREE.Points(dustGeo, new THREE.PointsMaterial({
+    size: 0.55,
+    map: makeDotTexture(),
+    color: 0x9ad8ff,
+    transparent: true,
+    opacity: 0.75,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+    fog: true
+  }));
+  dust.frustumCulled = false;
+  dust.renderOrder = 1;
+  scene.add(dust);
+
+  /* ------------------------------------------------------------------ *
+   * 7 · INPUT · SCROLL FLIGHT + MOUSE PARALLAX
+   * ------------------------------------------------------------------ */
+  var scrollTarget = 0, scrollCurrent = 0, scrollVelocity = 0;
+  var mouseNX = 0, mouseNY = 0;
+  var smoothX = 0, smoothY = 0;
+
+  function readScroll() {
+    var doc = document.scrollingElement || document.documentElement;
+    var max = Math.max(1, (doc.scrollHeight || 1) - window.innerHeight);
+    var y   = window.pageYOffset || doc.scrollTop || 0;
+    scrollTarget = Math.min(1, Math.max(0, y / max));
+  }
+
+  window.addEventListener('scroll', readScroll, { passive: true });
+  window.addEventListener('resize', function () { readScroll(); }, { passive: true });
+
+  window.addEventListener('pointermove', function (e) {
+    mouseNX = (e.clientX / window.innerWidth)  * 2 - 1;   // -1 left  → +1 right
+    mouseNY = -((e.clientY / window.innerHeight) * 2 - 1); // +1 top   → -1 bottom
+  }, { passive: true });
+
+  window.addEventListener('pointerleave', function () {
+    mouseNX = 0;
+    mouseNY = 0;
+  }, { passive: true });
+
+  readScroll();
+
+  /* ------------------------------------------------------------------ *
+   * 8 · RESIZE
+   * ------------------------------------------------------------------ */
+  function onResize() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
+
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(w, h, false);
+    readScroll();
+  }
+
+  window.addEventListener('resize', onResize);
+  window.addEventListener('orientationchange', onResize);
+
+  /* ------------------------------------------------------------------ *
+   * 9 · ANIMATION LOOP (delta-timed)
+   * ------------------------------------------------------------------ */
+  var clock       = new THREE.Clock();
+  var elapsed     = 0;
+  var gridPhase   = 0;
+  var camPos      = new THREE.Vector3(0, 8, 26);
+
+  var CAM_BASE_Z  = 26;
+  var CAM_FLIGHT  = 155;   // total Z travel across the full page scroll
+
+  var motionScale = reduceMotion ? 0.35 : 1;
+
+  function animate() {
+    requestAnimationFrame(animate);
+
+    var dt = Math.min(clock.getDelta(), 0.05);
+    elapsed += dt;
+    var t = elapsed * motionScale;
+
+    /* ---- scroll easing + velocity energy ---- */
+    var prev = scrollCurrent;
+    scrollCurrent += (scrollTarget - scrollCurrent) * Math.min(1, dt * 4.5);
+    scrollVelocity = (scrollCurrent - prev) / Math.max(dt, 0.0001);
+    var energy = Math.min(1.6, Math.abs(scrollVelocity) * 2.4) * motionScale;
+
+    /* ---- cursor easing ---- */
+    smoothX += (mouseNX - smoothX) * Math.min(1, dt * 3.2);
+    smoothY += (mouseNY - smoothY) * Math.min(1, dt * 3.2);
+
+    /* ---- grid: flows faster while the user scrolls ---- */
+    gridPhase += dt * (1.05 + energy * 6.5);
+    gridUniforms.uPhase.value = gridPhase;
+    gridUniforms.uTime.value  = t;
+
+    /* ---- camera: Z-depth flight + parallax pitch / yaw / roll ---- */
+    var targetX = smoothX * 5.0;
+    var targetY = 8 + smoothY * 3.2;
+    var targetZ = CAM_BASE_Z - scrollCurrent * CAM_FLIGHT;
+
+    camPos.x += (targetX - camPos.x) * Math.min(1, dt * 3.0);
+    camPos.y += (targetY - camPos.y) * Math.min(1, dt * 3.0);
+    camPos.z += (targetZ - camPos.z) * Math.min(1, dt * 5.5);
+
+    camera.position.copy(camPos);
+    camera.lookAt(
+      camPos.x + smoothX * 9.0,
+      4.5 + smoothY * 5.0,
+      camPos.z - 70
+    );
+    camera.rotateZ(-smoothX * 0.045);   // subtle cinematic roll
+
+    /* ---- candlesticks pulse ---- */
+    if (bullCandles.length) poseCandles(bullCandles, bullBody, bullWick, t, energy);
+    if (bearCandles.length) poseCandles(bearCandles, bearBody, bearWick, t, energy);
+
+    /* ---- floating numbers drift & bob ---- */
+    for (var i = 0; i < sprites.length; i++) {
+      var n = sprites[i];
+      var o = n.obj;
+      o.position.x = n.baseX + Math.sin(t * n.speed + n.phase) * n.sway;
+      o.position.y = n.baseY + Math.sin(t * n.speed * 1.6 + n.phase) * n.bob;
+      o.position.z = n.baseZ;
+      o.material.opacity = 0.45 + 0.30 * (0.5 + 0.5 * Math.sin(t * 0.9 + n.phase));
+    }
+
+    /* ---- ambient data dust ---- */
+    dust.rotation.y = t * 0.014;
+    dust.position.y = Math.sin(t * 0.22) * 1.4;
+
+    /* ---- breathing neon lights ---- */
+    lightGreen.position.x = -22 + Math.sin(t * 0.42) * 7.0;
+    lightGreen.intensity  = 2.6 + Math.sin(t * 1.3) * 0.55;
+    lightBlue.position.x  =  24 + Math.cos(t * 0.35) * 8.0;
+    lightBlue.intensity   = 3.0 + Math.cos(t * 1.1) * 0.60;
+    lightRose.intensity   = 1.7 + Math.sin(t * 0.85) * 0.45;
+
+    renderer.render(scene, camera);
+  }
+
+  /* Pause the delta clock while the tab is hidden so nothing "jumps". */
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { clock.getDelta(); }
+  });
+
+  animate();
+})();
+
+/* ══════════════════════════════════════════
+   LOADER
+══════════════════════════════════════════ */
+window.addEventListener('DOMContentLoaded', () => {
+  const progress = document.getElementById('tl-progress');
+  if (progress) progress.style.width = '100%';
+  setTimeout(() => {
+    const loader = document.getElementById('tl-loader');
+    const root   = document.getElementById('app-root');
+    if (loader) loader.style.opacity = '0';
+    if (root) root.style.opacity = '1';
+    setTimeout(() => { if (loader) loader.style.display = 'none'; }, 900);
+  }, 1800);
+});
+
+/* ══════════════════════════════════════════
+   3D TILT EFFECT FOR CARDS
+══════════════════════════════════════════ */
+document.querySelectorAll('.tilt-card').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const rect = card.getBoundingClientRect();
+    const cx   = rect.left + rect.width  / 2;
+    const cy   = rect.top  + rect.height / 2;
+    const dx   = (e.clientX - cx) / (rect.width  / 2);
+    const dy   = (e.clientY - cy) / (rect.height / 2);
+    card.style.transform = `perspective(900px) rotateY(${dx * 10}deg) rotateX(${-dy * 10}deg) translateZ(12px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = 'perspective(900px) rotateY(0deg) rotateX(0deg) translateZ(0)';
+  });
+});
+</script>
 </body></html>
