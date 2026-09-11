@@ -49,12 +49,12 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        const dates = {{ dates | safe }};
-        const cumulativePnls = {{ cumulative_pnls | safe }};
+        const dates = {{ dates | tojson }};
+        const cumulativePnls = {{ cumulative_pnls | tojson }};
         const wins = {{ wins }};
         const losses = {{ losses }};
-        const setupLabels = {{ setup_labels | safe }};
-        const setupData = {{ setup_data | safe }};
+        const setupLabels = {{ setup_labels | tojson }};
+        const setupData = {{ setup_data | tojson }};
 
         // Common Chart.js styling
         Chart.defaults.color = '#94a3b8';

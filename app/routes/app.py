@@ -1,4 +1,5 @@
-﻿from flask import Flask
+import secrets
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -14,6 +15,7 @@ from main_routes import main_bp
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 root_dir = os.path.abspath(os.path.join(base_dir, '..'))
 
+os.makedirs(os.path.join(root_dir, "instance"), exist_ok=True)
 app = Flask(__name__,
             template_folder=os.path.join(base_dir, 'templates'),
             static_folder=os.path.join(base_dir, 'static'),
@@ -68,7 +70,7 @@ print(f"[DB] Using local SQLite: {database_url}")
 
 app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-change-in-prod')
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY') or secrets.token_hex(32)
 
 # Trust reverse proxy headers (Render / Railway / Nginx)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
@@ -103,6 +105,7 @@ with app.app_context():
         print("[DB] Tables created/verified successfully.")
     except Exception as e:
         print(f"[DB] WARNING: Could not create tables at startup: {e}")
+        print(f"DB URI used: {app.config.get('SQLALCHEMY_DATABASE_URI', 'NOT SET')}")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))

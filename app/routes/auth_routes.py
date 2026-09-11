@@ -15,7 +15,7 @@ def register():
 
     form = Register()
     if form.validate_on_submit():
-        hashed_password = generate_password_hash(form.Password.data, method='pbkdf2:sha256')
+        hashed_password = generate_password_hash(form.Password.data, method='scrypt')
         user = User(
             Name=form.Name.data,
             Email=form.Email.data,
@@ -30,7 +30,7 @@ def register():
         except Exception as e:
             db.session.rollback()
             flash('Registration failed. Email or Username might already exist.', 'danger')
-            print(f"Database error during registration: {e}")
+            print("Database error during registration.")
 
     return render_template('register.html', form=form)
 

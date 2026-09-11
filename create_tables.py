@@ -1,4 +1,4 @@
-﻿"""
+"""
 Render build-phase / Railway release-phase script: creates all database tables.
 
 Render  -> set as the Build Command suffix:

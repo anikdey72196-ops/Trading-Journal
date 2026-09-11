@@ -1,29 +1,29 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, PasswordField, IntegerField, EmailField, DateField, SelectMultipleField, SelectField, widgets
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Email, Length, NumberRange
 
 class MultiCheckboxField(SelectMultipleField):
     widget = widgets.ListWidget(prefix_label=False)
     option_widget = widgets.CheckboxInput()
 
 class Register(FlaskForm):
-    Name = StringField('Name', validators=[DataRequired()], render_kw={"placeholder": "Enter your name"})
-    Email = EmailField('Email', validators=[DataRequired()], render_kw={"placeholder": "Enter your email"})
-    Password = PasswordField('Password', validators=[DataRequired()], render_kw={"placeholder": "Enter your password"})
-    Avg_Daily_max_trade = IntegerField('Avg Daily Max Trades', validators=[DataRequired()], render_kw={"placeholder": "Enter your average daily max trades"})
+    Name = StringField('Name', validators=[DataRequired(), Length(min=2, max=80)], render_kw={"placeholder": "Enter your name"})
+    Email = EmailField('Email', validators=[DataRequired(), Email(), Length(max=120)], render_kw={"placeholder": "Enter your email"})
+    Password = PasswordField('Password', validators=[DataRequired(), Length(min=6, max=128)], render_kw={"placeholder": "Enter your password"})
+    Avg_Daily_max_trade = IntegerField('Avg Daily Max Trades', validators=[DataRequired(), NumberRange(min=1, max=100)], render_kw={"placeholder": "Enter your average daily max trades"})
     submit = SubmitField('Register')
 
 class Login(FlaskForm):
-    Email = EmailField('Email', validators=[DataRequired()], render_kw={"placeholder": "Enter your email"})
+    Email = EmailField('Email', validators=[DataRequired(), Email()], render_kw={"placeholder": "Enter your email"})
     Password = PasswordField('Password', validators=[DataRequired()], render_kw={"placeholder": "Enter your password"})
     submit = SubmitField('Login')
 
 class AddTradeForm(FlaskForm):
-    trade_instruments = StringField('Trade Instruments', validators=[DataRequired()], render_kw={"placeholder": "e.g. NIFTY, BANKNIFTY"})
-    trade_lots = IntegerField('Trade Lots', validators=[DataRequired()], render_kw={"placeholder": "e.g. 1"})
+    trade_instruments = StringField('Trade Instruments', validators=[DataRequired(), Length(max=80)], render_kw={"placeholder": "e.g. NIFTY, BANKNIFTY"})
+    trade_lots = IntegerField('Trade Lots', validators=[DataRequired(), NumberRange(min=1)], render_kw={"placeholder": "e.g. 1"})
     trade_date = DateField('Trade Date', validators=[DataRequired()])
     trade_pnl = IntegerField('Trade PnL', validators=[DataRequired()], render_kw={"placeholder": "e.g. 500 or -200"})
-    trade_reason = StringField('Trade Reason / Notes', render_kw={"placeholder": "e.g. respect the Support zone, Liquidity... (Optional)"})
+    trade_reason = StringField('Trade Reason / Notes', validators=[Length(max=255)], render_kw={"placeholder": "e.g. respect the Support zone, Liquidity... (Optional)"})
     Profit_currency = SelectField('Profit Currency', choices=[('INR', 'INR'), ('USD', 'USD')], validators=[DataRequired()])
     Rules = MultiCheckboxField('Rules', choices=[
         ('fixed_sl', 'Fixed Stop loss'),
@@ -37,5 +37,5 @@ class AddTradeForm(FlaskForm):
     submit = SubmitField('Submit Trade')
 
 class DailyTargetForm(FlaskForm):
-    max_trades = IntegerField('Daily Target (Max Trades)', validators=[DataRequired()], render_kw={"placeholder": "e.g. 5"})
+    max_trades = IntegerField('Daily Target (Max Trades)', validators=[DataRequired(), NumberRange(min=1, max=100)], render_kw={"placeholder": "e.g. 5"})
     submit = SubmitField('Set Target')
